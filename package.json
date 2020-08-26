@@ -1,0 +1,8 @@
+{
+  "name": "se.lksystems.mylk",
+  "version": "1.0.0",
+  "main": "app.js",
+  "devDependencies": {
+    "homey": "^2.6.1"
+  }
+}
