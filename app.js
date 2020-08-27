@@ -2,7 +2,7 @@
 
 const Homey = require('homey');
 
-class MyApp extends Homey.App {
+class MyLkApp extends Homey.App {
 	
 	onInit() {
 		this.log('MyApp is running...');
@@ -10,4 +10,4 @@ class MyApp extends Homey.App {
 	
 }
 
-module.exports = MyApp;
+module.exports = MyLkApp;
