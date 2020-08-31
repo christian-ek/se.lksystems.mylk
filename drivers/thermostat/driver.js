@@ -1,13 +1,7 @@
 'use strict';
 
-const Homey = require('homey');
+const LkDriver = require('../../lib/LkDriver.js');
 
-class MyDriver extends Homey.Driver {
-	
-	onInit() {
-		this.log('MyDriver has been inited');
-	}
-	
-}
+class ThermostatDriver extends LkDriver {}
 
-module.exports = MyDriver;
+module.exports = ThermostatDriver;

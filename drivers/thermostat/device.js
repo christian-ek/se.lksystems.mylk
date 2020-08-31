@@ -1,13 +1,7 @@
 'use strict';
 
-const Homey = require('homey');
+const LkDevice = require('../../lib/LkDevice.js');
 
-class MyDevice extends Homey.Device {
-	
-	onInit() {
-		this.log('MyDevice has been inited');
-	}
-	
-}
+class ThermostatDevice extends LkDevice {}
 
-module.exports = MyDevice;
+module.exports = ThermostatDevice;

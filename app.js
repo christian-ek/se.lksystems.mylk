@@ -2,12 +2,12 @@
 
 const Homey = require('homey');
 
-class MyLkApp extends Homey.App {
-	
-	onInit() {
-		this.log('MyApp is running...');
-	}
-	
+class LkApp extends Homey.App {
+
+  onInit() {
+    this.log('Successfully init LK App');
+  }
+
 }
 
-module.exports = MyLkApp;
+module.exports = LkApp;
