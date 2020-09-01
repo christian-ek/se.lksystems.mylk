@@ -1,21 +1,30 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Creator: CorelDRAW X6 -->
-<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="2.68055in" height="2.73611in" version="1.1" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
-viewBox="0 0 2681 2736"
- xmlns:xlink="http://www.w3.org/1999/xlink">
- <defs>
-  <style type="text/css">
-   <![CDATA[
-    .fil0 {fill:#008DD0;fill-rule:nonzero}
-    .fil1 {fill:#FEFEFE;fill-rule:nonzero}
-   ]]>
-  </style>
- </defs>
- <g id="Layer_x0020_1">
-  <metadata id="CorelCorpID_0Corel-Layer"/>
-  <path class="fil0" d="M2687 2518c-2,121 -102,218 -224,218l-2238 0c-124,0 -224,-99 -224,-221l0 -2305c0,-122 100,-221 223,-221l2241 0c122,1 221,98 223,218l0 2312z"/>
-  <path class="fil1" d="M2076 2308l-1453 0c-86,0 -174,-58 -174,-170l0 -1573c0,-111 67,-180 174,-180 107,0 174,69 174,180l0 1427 1279 0c109,0 174,59 174,157 0,97 -67,157 -174,157l0 0z"/>
-  <path class="fil1" d="M2049 1825c-85,0 -148,-70 -199,-126l-12 -14 -459 -484 0 444c0,111 -67,180 -174,180 -107,0 -174,-69 -174,-180l0 -1079c0,-111 67,-180 174,-180 107,0 174,69 174,180l0 367 452 -462c65,-71 107,-85 162,-85 79,0 174,73 174,164 0,54 -37,103 -68,135l-396 370 433 440 3 3c51,54 92,97 92,159 0,115 -94,168 -182,168l0 0z"/>
- </g>
-</svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   viewBox="0 0 257.94666 263.81332"
+   height="263.81332"
+   width="257.94666"
+   xml:space="preserve"
+   id="svg2"
+   version="1.1"><metadata
+     id="metadata8"><rdf:RDF><cc:Work
+         rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /></cc:Work></rdf:RDF></metadata><defs
+     id="defs6" /><g
+     transform="matrix(1.3333333,0,0,-1.3333333,0,263.81333)"
+     id="g10"><g
+       transform="scale(0.1)"
+       id="g12"><path
+         id="path14"
+         style="fill:#0e88d3;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         d="M 1934.63,159.398 C 1934.63,71.3281 1862.31,0 1773.15,0 H 161.441 C 72.2891,0 0,71.3281 0,159.398 V 1819.25 c 0,87.97 72.2891,159.36 161.441,159.36 H 1773.15 c 89.16,0 161.48,-71.39 161.48,-159.36 V 159.398" /><path
+         id="path16"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         d="M 1495.07,307.898 H 449.117 c -62.242,0 -125.23,41.954 -125.23,122.09 V 1562.38 c 0,79.81 47.988,129.36 125.23,129.36 77.223,0 125.184,-49.55 125.184,-129.36 V 534.621 h 920.769 c 78.41,0 125.21,-42.359 125.21,-113.371 0,-69.922 -47.97,-113.352 -125.21,-113.352 v 0" /><path
+         id="path18"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         d="m 1475.54,656.289 c -61.25,0 -106.88,50.231 -143.53,90.563 l -8.92,9.769 -330.137,348.559 v -319.5 c 0,-79.821 -47.957,-129.391 -125.176,-129.391 -77.257,0 -125.238,49.57 -125.238,129.391 v 776.68 c 0,79.82 47.981,129.39 125.238,129.39 77.219,0 125.176,-49.57 125.176,-129.39 v -264.42 l 325.717,332.85 c 46.65,51.24 76.97,60.96 116.56,60.96 56.68,0 125.16,-52.5 125.16,-117.73 0,-38.82 -26.63,-74.45 -48.96,-97.5 l -285.21,-266.23 312.07,-316.849 2.17,-2.261 c 37.02,-38.95 66.25,-69.731 66.25,-114.239 0,-82.902 -67.98,-120.652 -131.17,-120.652 v 0" /></g></g></svg>
