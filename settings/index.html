@@ -3,75 +3,32 @@
 <head>
     <!-- The '/homey.js' script must be included in your settings view to work -->
     <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
+    <script type="text/javascript" src="settings.js" data-origin="settings"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+
 </head>
 <body>
-<h1 data-i18n="settings.title">
-    <!--
-      This field will automatically be filled by a translated string with key 'settings.title'.
-      Read more about translations at Internationalization.
-    -->
-</h1>
-<p data-i18n="settings.subtitle">
-    <!-- This field will also be translated -->
-</p>
-
-<fieldset>
-    <legend>Settings</legend>
-
-    <div class="field row">
-        <label for="username">LK Webserver IP</label>
-        <input id="ip" type="text" value="" />
+<div id="app">
+    <div class="row">
+        <div class="logo-row">
+            <img class="logo" src="lk_systems_logo.svg"  width="200" height="100">
+        </div>
     </div>
-    <div class="field row">
-        <label for="username">Username</label>
-        <input id="username" type="text" value="" />
+
+    <fieldset class="listContainer">
+        <div class="form-group">
+            <label for="ip" data-i18n="settings.ipLabel">LK Webserver IP</label>
+            <input type="text" class="form-control" id="ip">
+        </div>
+        <div class="form-group">
+            <label for="password" data-i18n="settings.passwordLabel">Password</label>
+            <input type="password" class="form-control" id="password">
+        </div>
+    </fieldset>
+    <div>
+        <button type="submit" id="save" class="btn btn-primary" data-i18n="settings.saveButton">Save changes</button>
+        <p id="saved" data-i18n="settings.savedText"></p>
     </div>
-    <div class="field row">
-        <label for="password">Password</label>
-        <input id="password" type="password" value="" />
-    </div>
-</fieldset>
-
-<button id="save" class="right">Save changes</button>
-
-<script type="text/javascript">
-    // a method named 'onHomeyReady' must be present in your code
-    function onHomeyReady(Homey) {
-        // Tell Homey we're ready to be displayed
-        Homey.ready();
-
-        var ipElement = document.getElementById('ip');
-        var usernameElement = document.getElementById('username');
-        var passwordElement = document.getElementById('password');
-        var saveElement = document.getElementById('save');
-
-        Homey.get('ip', function (err, ip) {
-            if (err) return Homey.alert(err);
-            ipElement.value = ip;
-        });
-
-        Homey.get('username', function (err, username) {
-            if (err) return Homey.alert(err);
-            usernameElement.value = username;
-        });
-
-        Homey.get('password', function (err, password) {
-            if (err) return Homey.alert(err);
-            passwordElement.value = password;
-        });
-
-        saveElement.addEventListener('click', function (e) {
-            Homey.set('ip', ipElement.value, function (err) {
-                if (err) return Homey.alert(err);
-            });
-            Homey.set('username', usernameElement.value, function (err) {
-                if (err) return Homey.alert(err);
-            });
-            Homey.set('password', passwordElement.value, function (err) {
-                if (err) return Homey.alert(err);
-            });
-        });
-    }
-</script>
+</div>
 </body>
 </html>
