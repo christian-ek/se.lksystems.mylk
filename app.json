@@ -4,22 +4,47 @@
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "name": {
-    "en": "LK Systems"
+    "en": "LK Systems",
+    "se": "LK Systems"
   },
   "description": {
-    "en": "Adds support for LK Systems thermostat."
+    "en": "Adds support for LK Systems devices",
+    "se": "Lägger till stöd för LK Systems-enheter"
   },
   "category": [
     "climate"
   ],
+  "tags": {
+    "en": [
+      "LK",
+      "ICS",
+      "ICS.2",
+      "Thermostat",
+      "Underfloor heating"
+    ],
+    "se": [
+      "LK",
+      "ICS",
+      "ICS.2",
+      "Termostat",
+      "Golvvärme"
+    ]
+  },
   "permissions": [],
   "images": {
-    "large": "/assets/images/large.png",
-    "small": "/assets/images/small.png"
+    "large": "/assets/images/large.jpg",
+    "small": "/assets/images/small.jpg"
   },
   "author": {
     "name": "Christian Ek",
     "email": "christian.ek@live.se"
+  },
+  "contributing": {
+    "donate": {
+      "paypal": {
+        "username": "christianoak"
+      }
+    }
   },
   "drivers": [
     {
@@ -46,8 +71,8 @@
         ]
       },
       "images": {
-        "large": "/drivers/thermostat/assets/images/large.png",
-        "small": "/drivers/thermostat/assets/images/small.png"
+        "large": "/drivers/thermostat/assets/images/large.jpg",
+        "small": "/drivers/thermostat/assets/images/small.jpg"
       },
       "pair": [
         {
