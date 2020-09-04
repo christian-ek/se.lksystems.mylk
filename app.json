@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "compatibility": ">=5.0.0",
   "sdk": 3,
+  "brandColor": "#0082c8",
   "name": {
     "en": "LK Systems",
-    "se": "LK Systems"
+    "sv": "LK Systems"
   },
   "description": {
     "en": "Adds support for LK Systems devices",
-    "se": "Lägger till stöd för LK Systems-enheter"
+    "sv": "Lägger till stöd för LK Systems-enheter"
   },
   "category": [
     "climate"
@@ -22,7 +23,7 @@
       "Thermostat",
       "Underfloor heating"
     ],
-    "se": [
+    "sv": [
       "LK",
       "ICS",
       "ICS.2",
@@ -46,11 +47,13 @@
       }
     }
   },
+  "support": "mailto:christian.ek@live.se",
   "drivers": [
     {
       "id": "thermostat",
       "name": {
-        "en": "LK Thermostat"
+        "en": "LK Thermostat",
+        "sv": "LK Termostat"
       },
       "class": "thermostat",
       "capabilities": [
@@ -92,7 +95,7 @@
           "type": "group",
           "label": {
             "en": "Update device interval",
-            "se": "Uppdateringsintervall för hämtning av data"
+            "sv": "Uppdateringsintervall för hämtning av data"
           },
           "children": [
             {
@@ -100,7 +103,7 @@
               "type": "number",
               "label": {
                 "en": "minutes",
-                "se": "minuter"
+                "sv": "minuter"
               },
               "value": 1,
               "min": 1,
