@@ -1,5 +1,14 @@
 {
   "1.0.0": {
     "en": "First release"
+  },
+  "1.0.1": {
+    "en": "Fixed so that device pairing don't show already added devices"
+  },
+  "1.0.2": {
+    "en": "Use SDKv2"
+  },
+  "1.1.0": {
+    "en": "Use SDKv3"
   }
 }
