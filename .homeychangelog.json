@@ -10,5 +10,8 @@
   },
   "1.1.0": {
     "en": "Use SDKv3"
+  },
+  "1.1.1": {
+    "en": "Add debug information to log."
   }
 }
