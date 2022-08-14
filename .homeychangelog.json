@@ -13,5 +13,8 @@
   },
   "1.1.1": {
     "en": "Add debug information to log."
+  },
+  "1.1.2": {
+    "en": "Rewrite how requests are made"
   }
 }
