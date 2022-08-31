@@ -1,6 +1,6 @@
 {
   "id": "se.lksystems.mylk",
-  "version": "1.1.5",
+  "version": "1.2.0",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "brandColor": "#0082c8",
@@ -108,6 +108,123 @@
               "value": 1,
               "min": 1,
               "max": 59
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wss_master_unit",
+      "name": {
+        "en": "LK Master Unit WSS",
+        "sv": "LK Huvudenhet WSS"
+      },
+      "class": "other",
+      "capabilities": [
+        "onoff",
+        "measure_pressure"
+      ],
+      "capabilitiesOptions": {
+        "measure_pressure": {
+          "decimals": 1,
+          "units": {
+            "en": "bar"
+          }
+        }
+      },
+      "images": {
+        "large": "/drivers/wss_master_unit/assets/images/large.jpg",
+        "small": "/drivers/wss_master_unit/assets/images/small.jpg"
+      },
+      "pair": [
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "settings": [
+        {
+          "type": "group",
+          "label": {
+            "en": "Update device interval",
+            "sv": "Uppdateringsintervall för hämtning av data"
+          },
+          "children": [
+            {
+              "id": "interval",
+              "type": "number",
+              "label": {
+                "en": "minutes",
+                "sv": "minuter"
+              },
+              "value": 1,
+              "min": 1,
+              "max": 59
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "water_detector",
+      "name": {
+        "en": "LK Leak Detector WSS",
+        "sv": "LK Läckagedetektor WSS"
+      },
+      "class": "other",
+      "capabilities": [
+        "alarm_water",
+        "measure_temperature",
+        "alarm_battery"
+      ],
+      "energy": {
+        "batteries": [
+          "AAA",
+          "AAA"
+        ]
+      },
+      "images": {
+        "large": "/drivers/wss_master_unit/assets/images/large.jpg",
+        "small": "/drivers/wss_master_unit/assets/images/small.jpg"
+      },
+      "pair": [
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "settings": [
+        {
+          "type": "group",
+          "label": {
+            "en": "Update device interval",
+            "sv": "Uppdateringsintervall för hämtning av data"
+          },
+          "children": [
+            {
+              "id": "interval",
+              "type": "number",
+              "label": {
+                "en": "seconds",
+                "sv": "sekunder"
+              },
+              "value": 10,
+              "min": 10,
+              "max": 3600
             }
           ]
         }
