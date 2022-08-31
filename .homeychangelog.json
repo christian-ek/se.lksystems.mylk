@@ -31,5 +31,8 @@
   },
   "1.2.1": {
     "en": "Fix faulty image paths"
+  },
+  "1.2.2": {
+    "en": "Fix copy-paste error"
   }
 }
