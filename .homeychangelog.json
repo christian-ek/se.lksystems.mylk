@@ -28,5 +28,8 @@
   },
   "1.2.0": {
     "en": "Add support for LK WSS (Water Safety System) units."
+  },
+  "1.2.1": {
+    "en": "Fix faulty image paths"
   }
 }

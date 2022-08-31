@@ -14,8 +14,8 @@
     "batteries": ["AAA", "AAA"]
   },
   "images": {
-    "large": "/drivers/wss_master_unit/assets/images/large.jpg",
-    "small": "/drivers/wss_master_unit/assets/images/small.jpg"
+    "large": "/drivers/water_detector/assets/images/large.jpg",
+    "small": "/drivers/water_detector/assets/images/small.jpg"
   },
   "pair": [
     {

@@ -1,6 +1,6 @@
 {
   "id": "se.lksystems.mylk",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "brandColor": "#0082c8",
@@ -52,8 +52,8 @@
     {
       "id": "thermostat",
       "name": {
-        "en": "LK Thermostat",
-        "sv": "LK Termostat"
+        "en": "LK ICS.2 Thermostat",
+        "sv": "LK ICS.2 Termostat"
       },
       "class": "thermostat",
       "capabilities": [
