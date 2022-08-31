@@ -1,26 +1,25 @@
 {
-  "id": "thermostat",
+  "id": "wss_master_unit",
   "name": {
-    "en": "LK Thermostat",
-    "sv": "LK Termostat"
+    "en": "LK Master Unit WSS",
+    "sv": "LK Huvudenhet WSS"
   },
-  "class": "thermostat",
+  "class": "other",
   "capabilities": [
-    "target_temperature",
-    "measure_temperature",
-    "measure_battery"
+    "onoff",
+    "measure_pressure"
   ],
   "capabilitiesOptions": {
-    "measure_temperature": {
-      "decimals": 1
+    "measure_pressure": {
+      "decimals": 1,
+      "units": {
+        "en": "bar"
+      }
     }
   },
-  "energy": {
-    "batteries": ["AAA", "AAA", "AAA"]
-  },
   "images": {
-    "large": "/drivers/thermostat/assets/images/large.jpg",
-    "small": "/drivers/thermostat/assets/images/small.jpg"
+    "large": "/drivers/wss_master_unit/assets/images/large.jpg",
+    "small": "/drivers/wss_master_unit/assets/images/small.jpg"
   },
   "pair": [
     {

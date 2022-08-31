@@ -1,26 +1,21 @@
 {
-  "id": "thermostat",
+  "id": "water_detector",
   "name": {
-    "en": "LK Thermostat",
-    "sv": "LK Termostat"
+    "en": "LK Leak Detector WSS",
+    "sv": "LK Läckagedetektor WSS"
   },
-  "class": "thermostat",
+  "class": "other",
   "capabilities": [
-    "target_temperature",
+    "alarm_water",
     "measure_temperature",
-    "measure_battery"
+    "alarm_battery"
   ],
-  "capabilitiesOptions": {
-    "measure_temperature": {
-      "decimals": 1
-    }
-  },
   "energy": {
-    "batteries": ["AAA", "AAA", "AAA"]
+    "batteries": ["AAA", "AAA"]
   },
   "images": {
-    "large": "/drivers/thermostat/assets/images/large.jpg",
-    "small": "/drivers/thermostat/assets/images/small.jpg"
+    "large": "/drivers/wss_master_unit/assets/images/large.jpg",
+    "small": "/drivers/wss_master_unit/assets/images/small.jpg"
   },
   "pair": [
     {
@@ -47,12 +42,12 @@
           "id": "interval",
           "type": "number",
           "label": {
-            "en": "minutes",
-            "sv": "minuter"
+            "en": "seconds",
+            "sv": "sekunder"
           },
-          "value": 1,
-          "min": 1,
-          "max": 59
+          "value": 10,
+          "min": 10,
+          "max": 3600
         }
       ]
     }
