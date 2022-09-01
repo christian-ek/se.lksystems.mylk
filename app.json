@@ -1,6 +1,6 @@
 {
   "id": "se.lksystems.mylk",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "brandColor": "#0082c8",
@@ -9,8 +9,8 @@
     "sv": "LK Systems"
   },
   "description": {
-    "en": "Adds support for LK Systems devices",
-    "sv": "Lägger till stöd för LK Systems-enheter"
+    "en": "For the simpler, smarter everyday",
+    "sv": "För en enklare och smartare vardag"
   },
   "category": [
     "climate"
@@ -33,6 +33,7 @@
   },
   "permissions": [],
   "images": {
+    "xlarge": "/assets/images/xlarge.jpg",
     "large": "/assets/images/large.jpg",
     "small": "/assets/images/small.jpg"
   },
