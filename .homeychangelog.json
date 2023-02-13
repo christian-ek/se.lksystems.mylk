@@ -40,5 +40,8 @@
   },
   "1.2.4": {
     "en": "Update app store information"
+  },
+  "1.3.0": {
+    "en": "Moved settings from app settings to pair screen. Refactored alot of code. If you experience any issues with your devices, try removing them and add them again."
   }
 }
