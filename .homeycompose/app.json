@@ -1,0 +1,56 @@
+{
+  "id": "se.lksystems.mylk",
+  "version": "1.2.4",
+  "compatibility": ">=5.0.0",
+  "sdk": 3,
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "LK Systems",
+    "sv": "LK Systems"
+  },
+  "description": {
+    "en": "For the simpler, smarter everyday",
+    "sv": "För en enklare och smartare vardag"
+  },
+  "category": [
+    "climate"
+  ],
+  "permissions": [],
+  "images": {
+    "xlarge": "/assets/images/xlarge.jpg",
+    "large": "/assets/images/large.jpg",
+    "small": "/assets/images/small.jpg"
+  },
+  "author": {
+    "name": "Christian Ek",
+    "email": "christian.ek@live.se"
+  },
+  "contributing": {
+    "donate": {
+      "paypal": {
+        "username": "christianoak"
+      }
+    }
+  },
+  "support": "mailto:christian.ek@live.se",
+  "brandColor": "#0082c8",
+  "tags": {
+    "en": [
+      "LK",
+      "ICS",
+      "ICS.2",
+      "Thermostat",
+      "Underfloor heating"
+    ],
+    "sv": [
+      "LK",
+      "ICS",
+      "ICS.2",
+      "Termostat",
+      "Golvvärme"
+    ]
+  },
+  "source": "https://github.com/christian-ek/se.anywhere.ivt"
+}

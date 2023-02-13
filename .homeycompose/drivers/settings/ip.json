@@ -1,0 +1,12 @@
+{
+  "type": "text",
+  "label": {
+    "en": "IP address",
+    "sv": "IP adress"
+  },
+  "hint": {
+    "en": "IP address to NUT server.",
+    "sv": "IP adress till NUT servern."
+  },
+  "value": "-"
+}

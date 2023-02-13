@@ -1,8 +1,0 @@
-{
-  "settings": {
-    "ipLabel": "LK Webserver IP",
-    "passwordLabel": "Password (Written on LK Webserver)",
-    "saveButton": "Save changes",
-    "savedText": "Settings saved!"
-  }
-}

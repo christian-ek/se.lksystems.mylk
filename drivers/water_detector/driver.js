@@ -8,52 +8,80 @@ class WaterDetectorDriver extends Homey.Driver {
   onInit() {
   }
 
-  async onPairListDevices() {
-    if (this.homey.settings.get('ip') === '') {
-      this.log('No IP in app settings.');
-      throw new Error('You must add IP in app settings before running.');
-    }
-    if (this.homey.settings.get('password') === '') {
-      this.log('No password in app settings.');
-      throw new Error('You must add LK webserver password in app settings before running.');
-    }
-    const waterDetectors = await this.getActiveWaterDetectors();
-    this.log(`Active Water Detector IDs: ${waterDetectors}`);
+  // Pairing
+  onPair(session) {
+    this.log('Pairing started');
 
-    // return devices when searching is done
-    return waterDetectors;
+    session.setHandler('getSettings', async () => {
+      return {
+        ip: this.homey.settings.get('ip'),
+        password: this.homey.settings.get('password'),
+      };
+    });
+
+    const foundDevices = [];
+
+    session.setHandler('connect', async data => {
+      const settings = data;
+
+      this.log('Start requesting water detector info from LK Webserver...');
+
+      return this.getActiveWaterDetectors(settings)
+        .then(async list => {
+          for (const unit of list) {
+            foundDevices.push(unit);
+          }
+        })
+        .then(() => this.saveSettings(data))
+        .catch(err => {
+          return Promise.reject(err);
+        });
+    });
+
+    session.setHandler('list_devices', async () => {
+      return Promise.resolve(foundDevices);
+    });
   }
 
-  async getActiveWaterDetectors() {
-    const url = `http://${this.homey.settings.get('ip')}/water.json`;
+  async getActiveWaterDetectors(settings) {
+    const url = `http://${settings.ip}/water.json`;
 
     this.log('Requesting list of active devices..');
     const devices = [];
 
-    const result = await doRequest(this.homey, url, 'GET')
+    await doRequest(settings.password, url, 'GET')
       .then(res => res.units)
-      .catch(err => this.log(err));
-
-    if (result) {
-      this.log(`Response: ${result}`);
-      for (let i = 0; i < result.length; i++) {
-        let device = {};
-
-        if (result[i].unit_type === 'detector') {
-          const status = getWaterDetectorStatus(result[i]);
-          device = {
-            name: status.name,
-            data: {
+      .then(async list => {
+        for (const unit of list) {
+          if (unit.unit_type === 'detector') {
+            const status = getWaterDetectorStatus(unit);
+            const device = {
               name: status.name,
-              id: status.id,
-            },
-          };
-          devices.push(device);
+              settings: {
+                ip: settings.ip,
+                interval: settings.interval,
+                password: settings.password,
+              },
+              data: {
+                name: status.name,
+                id: status.id,
+              },
+            };
+            devices.push(device);
+          }
         }
-      }
-    }
+      })
+      .catch(err => {
+        this.log(err);
+        return Promise.reject(err);
+      });
 
     return devices;
+  }
+
+  saveSettings(data) {
+    this.homey.settings.set('ip', data.ip);
+    this.homey.settings.set('password', data.password);
   }
 
 }

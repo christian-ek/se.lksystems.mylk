@@ -8,42 +8,59 @@ class ThermostatDriver extends Homey.Driver {
   onInit() {
   }
 
-  async onPairListDevices() {
-    if (this.homey.settings.get('ip') === '') {
-      this.log('No IP in app settings.');
-      throw new Error('You must add IP in app settings before running.');
-    }
-    if (this.homey.settings.get('password') === '') {
-      this.log('No password in app settings.');
-      throw new Error('You must add LK webserver password in app settings before running.');
-    }
-    const thermostats = [];
-    this.log('Start requesting thermostat info from LK Webserver...');
+  // Pairing
+  onPair(session) {
+    this.log('Pairing started');
 
-    const activeThermostatIds = await this.getActiveThermostats();
-    this.log(`Active thermostat IDs: ${activeThermostatIds}`);
+    session.setHandler('getSettings', async () => {
+      return {
+        ip: this.homey.settings.get('ip'),
+        password: this.homey.settings.get('password'),
+      };
+    });
 
-    for (let i = 0; i < activeThermostatIds.length; i++) {
-      await this.getThermostatData(activeThermostatIds[i]).then(
-        res => thermostats.push(res),
-      );
-    }
+    const foundDevices = [];
 
-    this.log('Thermostat data collection done!');
+    session.setHandler('connect', async data => {
+      const settings = data;
 
-    // return devices when searching is done
-    return thermostats;
+      this.log('Start requesting thermostat info from LK Webserver...');
+
+      return this.getActiveThermostats(settings)
+        .then(async list => {
+          for (const id of list) {
+            foundDevices.push(await this.getDeviceData(id, settings));
+          }
+        })
+        .then(() => this.saveSettings(data))
+        .catch(err => {
+          this.log(err);
+          return Promise.reject(err);
+        });
+    });
+
+    session.setHandler('list_devices', async () => {
+      return Promise.resolve(foundDevices);
+    });
   }
 
-  async getActiveThermostats() {
-    const url = `http://${this.homey.settings.get('ip')}/main.json`;
+  saveSettings(data) {
+    this.homey.settings.set('ip', data.ip);
+    this.homey.settings.set('password', data.password);
+  }
+
+  async getActiveThermostats(settings) {
+    const url = `http://${settings.ip}/main.json`;
 
     this.log('Requesting list of active devices..');
     const devices = [];
 
-    const result = await doRequest(this.homey, url, 'GET')
+    const result = await doRequest(settings.password, url, 'GET')
       .then(res => res)
-      .catch(err => this.log(err));
+      .catch(err => {
+        this.log(err);
+        return Promise.reject(err);
+      });
 
     if (result) {
       this.log(`Response: ${result}`);
@@ -58,21 +75,29 @@ class ThermostatDriver extends Homey.Driver {
     return devices;
   }
 
-  async getThermostatData(id) {
+  async getDeviceData(id, settings) {
     let device = {};
-    const url = `http://${this.homey.settings.get('ip')}/thermostat.json?tid=${id}`;
+    const url = `http://${settings.ip}/thermostat.json?tid=${id}`;
     this.log('Requesting thermostat data from URL:', url);
 
-    const result = await doRequest(this.homey, url, 'GET')
+    const result = await doRequest(settings.password, url, 'GET')
       .then(res => res)
-      .catch(err => this.log(err));
+      .catch(err => {
+        this.log(err);
+        return Promise.reject(err);
+      });
 
     if (result) {
-      this.log(`Response: ${result}`);
+      this.log('Response:', result);
 
       const status = getThermostatStatus(result);
       device = {
         name: status.name,
+        settings: {
+          ip: settings.ip,
+          interval: settings.interval,
+          password: settings.password,
+        },
         data: {
           name: status.name,
           id,

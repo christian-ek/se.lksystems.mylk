@@ -1,8 +1,0 @@
-{
-  "settings": {
-    "ipLabel": "LK Webserver IP",
-    "passwordLabel": "Lösenord (Står på LK webserver)",
-    "saveButton": "Spara ändringar",
-    "savedText": "Inställningar sparade!"
-  }
-}

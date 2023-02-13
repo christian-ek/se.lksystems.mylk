@@ -19,25 +19,24 @@ class WaterDetectorDevice extends Homey.Device {
   async getDeviceData() {
     const { device } = this;
     this.log(`[${this.getName()}][${device.id}]`, 'Refresh device');
-    const url = `http://${this.homey.settings.get('ip')}/water.json`;
+    const url = `http://${this.getSetting('ip')}/water.json`;
 
     this.log('Requesting device information:', url);
 
-    const result = await doRequest(this.homey, url, 'GET')
+    await doRequest(this.getSetting('password'), url, 'GET')
       .then(res => res.units)
-      .catch(err => this.log(err));
+      .then(list => {
+        for (const unit of list) {
+          if (unit.id === device.id) {
+            const status = getWaterDetectorStatus(unit);
 
-    if (result) {
-      for (let i = 0; i < result.length; i++) {
-        if (result[i].id === device.id) {
-          const status = getWaterDetectorStatus(result[i]);
-
-          this.setCapabilityValue('measure_temperature', status.temperature).catch(this.error);
-          this.setCapabilityValue('alarm_battery', status.alarm_battery).catch(this.error);
-          this.setCapabilityValue('alarm_water', status.alarm_water).catch(this.error);
+            this.setCapabilityValue('measure_temperature', status.temperature).catch(this.error);
+            this.setCapabilityValue('alarm_battery', status.alarm_battery).catch(this.error);
+            this.setCapabilityValue('alarm_water', status.alarm_water).catch(this.error);
+          }
         }
-      }
-    }
+      })
+      .catch(err => this.log(err));
   }
 
   onAdded() {
@@ -59,10 +58,28 @@ class WaterDetectorDevice extends Homey.Device {
     }, updateInterval);
   }
 
-  async onSettings({ oldSettings, newSettings, changedKeys }) {
+  /**
+   * onSettings is called when the user updates the device's settings.
+   * @param {object} event the onSettings event data
+   * @param {object} event.oldSettings The old settings object
+   * @param {object} event.newSettings The new settings object
+   * @param {string[]} event.changedKeys An array of keys changed since the previous version
+   * @returns {Promise<string|void>} return a custom message that will be displayed
+   */
+  async onSettings({
+    oldSettings,
+    newSettings,
+    changedKeys,
+  }) {
     const { interval } = this;
+    for (const name of changedKeys) {
+      /* Log setting changes except for password */
+      if (name !== 'password') {
+        this.log(`Setting '${name}' set '${oldSettings[name]}' => '${newSettings[name]}'`);
+      }
+    }
     if (oldSettings.interval !== newSettings.interval) {
-      this.log(`Delete old interval of ${oldSettings.interval} min and creating new ${newSettings.interval} min`);
+      this.log(`Delete old interval of ${oldSettings.interval}s and creating new ${newSettings.interval}s`);
       clearInterval(interval);
       this.setUpdateInterval(newSettings.interval);
     }

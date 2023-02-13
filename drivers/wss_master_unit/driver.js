@@ -8,41 +8,65 @@ class MasterUnitDriver extends Homey.Driver {
   onInit() {
   }
 
-  async onPairListDevices() {
-    if (this.homey.settings.get('ip') === '') {
-      this.log('No IP in app settings.');
-      throw new Error('You must add IP in app settings before running.');
-    }
-    if (this.homey.settings.get('password') === '') {
-      this.log('No password in app settings.');
-      throw new Error('You must add LK webserver password in app settings before running.');
-    }
+  // Pairing
+  onPair(session) {
+    this.log('Pairing started');
 
-    return this.getMasterUnitData();
+    session.setHandler('getSettings', async () => {
+      return {
+        ip: this.homey.settings.get('ip'),
+        password: this.homey.settings.get('password'),
+      };
+    });
+
+    const foundDevices = [];
+
+    session.setHandler('connect', async data => {
+      const settings = data;
+
+      this.log('Start requesting water master unit info from LK Webserver...');
+
+      return this.getMasterUnitData(settings)
+        .then(unit => foundDevices.push(unit))
+        .then(() => this.saveSettings(data))
+        .catch(err => {
+          return Promise.reject(err);
+        });
+    });
+
+    session.setHandler('list_devices', async () => {
+      return Promise.resolve(foundDevices);
+    });
   }
 
-  async getMasterUnitData() {
-    let device = {};
-    const url = `http://${this.homey.settings.get('ip')}/water.json`;
+  async getMasterUnitData(settings) {
+    const url = `http://${settings.ip}/water.json`;
     this.log('Requesting thermostat data from URL:', url);
 
-    const result = await doRequest(this.homey, url, 'GET')
-      .then(res => res)
-      .catch(err => this.log(err));
-
-    if (result) {
-      this.log(`Response: ${result}`);
-
-      const status = getWaterStatus(result);
-      device = {
-        name: status.name,
-        data: {
+    return doRequest(settings.password, url, 'GET')
+      .then(res => {
+        const status = getWaterStatus(res);
+        return {
           name: status.name,
-        },
-      };
-    }
+          settings: {
+            ip: settings.ip,
+            interval: settings.interval,
+            password: settings.password,
+          },
+          data: {
+            name: status.name,
+          },
+        };
+      })
+      .catch(err => {
+        this.log(err);
+        return Promise.reject(err);
+      });
+  }
 
-    return device;
+  saveSettings(data) {
+    this.homey.settings.set('ip', data.ip);
+    this.homey.settings.set('password', data.password);
   }
 
 }

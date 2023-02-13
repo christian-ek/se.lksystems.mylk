@@ -13,43 +13,7 @@
   "energy": {
     "batteries": ["AAA", "AAA"]
   },
-  "images": {
-    "large": "/drivers/water_detector/assets/images/large.jpg",
-    "small": "/drivers/water_detector/assets/images/small.jpg"
-  },
-  "pair": [
-    {
-      "id": "list_devices",
-      "template": "list_devices",
-      "navigation": {
-        "next": "add_devices"
-      }
-    },
-    {
-      "id": "add_devices",
-      "template": "add_devices"
-    }
-  ],
-  "settings": [
-    {
-      "type": "group",
-      "label": {
-        "en": "Update device interval",
-        "sv": "Uppdateringsintervall för hämtning av data"
-      },
-      "children": [
-        {
-          "id": "interval",
-          "type": "number",
-          "label": {
-            "en": "seconds",
-            "sv": "sekunder"
-          },
-          "value": 10,
-          "min": 10,
-          "max": 3600
-        }
-      ]
-    }
+  "$extends": [
+    "defaults"
   ]
 }

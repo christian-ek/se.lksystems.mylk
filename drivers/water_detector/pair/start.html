@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <script src="../../../assets/vue.min.js"></script>
+  <link rel="stylesheet" href="../../../assets/bootstrap.min.css" />
+</head>
+
+<body>
+  <div id="start">
+    <div class="row align-items-center alert alert-light" role="alert" id="status"
+      style="width: 100%; margin-left: 0px; margin-right: 0px;">
+      <div class="row">
+        <div class="logo-row text-center">
+            <img class="logo" src="../../../assets/lk_systems_logo.svg"  width="200" height="100">
+        </div>
+      </div>
+      <div class="input-group mb-3">
+        <input v-model="data.ip" type="text" class="form-control hy-nostyle" placeholder="LK Webserver IP" />
+      </div>
+      <div class="input-group mb-3">
+        <input v-model="data.password" type="password" class="form-control hy-nostyle" placeholder="Password (Written on LK Webserver)" />
+      </div>
+      <div class="input-group mb-3">
+        <small class="form-text text-muted">Polling period, seconds</small>
+      </div>
+      <div class="input-group mb-3">
+        <input v-model="data.interval" type="number" class="form-control hy-nostyle" placeholder="30" min="10" max="3600" @change="validateInterval" />
+      </div>
+      <div>
+        <div class="col">
+          <div class="float-start">{{error}}</div>
+        </div>
+        <div class="col">
+          <button @click="connect" type="button" class="btn btn-outline-dark float-end hy-nostyle" style="height: auto;">Connect</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    new Vue({
+      el: "#start",
+      data: function () {
+        return {
+          data: {
+            ip: '',
+            password: '',
+            interval: 10
+          },
+          error: ''
+        }
+      },
+      methods: {
+        connect() {
+
+          Homey.showLoadingOverlay();
+
+          let alert = document.getElementById(`status`);
+
+          Homey.emit("connect", this.data)
+            .then(() => Homey.nextView())
+            .catch(error => {
+              Homey.hideLoadingOverlay();
+              alert.classList.remove("alert-light");
+              alert.classList.add("alert-danger");
+              this.error = error;
+            });
+        },
+        validateInterval() {
+          if (this.data.interval > 3600 || this.data.interval < 10) {
+            Homey.alert("Interval must be between 10 and 3600 seconds")
+            this.data.interval = 10 
+          }
+        },
+        getSettings() {
+          Homey.emit('getSettings', {})
+          .then(res => {
+            this.data.ip = res.ip || '';
+            this.data.password = res.password || '';
+          })
+          .catch(error => Homey.alert(error));
+        }
+      },
+      beforeMount() {
+        this.getSettings()
+      },
+    });
+  </script>
+</body>
+
+</html>
