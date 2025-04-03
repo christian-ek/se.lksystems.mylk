@@ -1,0 +1,22 @@
+{
+  "name": {
+    "en": "cubic-secure"
+  },
+  "class": "watervalve",
+  "capabilities": [
+    "button",
+    "measure_pressure",
+    "measure_temperature",
+    "onoff",
+    "alarm_water",
+    "measure_water",
+    "meter_water"
+  ],
+  "platforms": ["local"],
+  "connectivity": ["cloud"],
+  "images": {
+    "small": "{{driverAssetsPath}}/images/small.png",
+    "large": "{{driverAssetsPath}}/images/large.png",
+    "xlarge": "{{driverAssetsPath}}/images/xlarge.png"
+  }
+}

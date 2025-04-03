@@ -1,0 +1,53 @@
+[
+    {
+        "type": "group",
+        "label": {
+            "en": "API Settings",
+            "sv": "API Inställningar"
+        },
+        "children": [
+            {
+                "id": "email",
+                "type": "text",
+                "label": {
+                    "en": "Email",
+                    "sv": "E-post"
+                },
+                "value": ""
+            },
+            {
+                "id": "password",
+                "type": "password",
+                "label": {
+                    "en": "Password",
+                    "sv": "Lösenord"
+                },
+                "value": ""
+            }
+        ]
+    },
+    {
+        "type": "group",
+        "label": {
+            "en": "Update Settings",
+            "sv": "Uppdateringsinställningar"
+        },
+        "children": [
+            {
+                "id": "interval",
+                "type": "number",
+                "label": {
+                    "en": "Update interval (seconds)",
+                    "sv": "Uppdateringsintervall (sekunder)"
+                },
+                "value": 30,
+                "min": 10,
+                "max": 600,
+                "units": {
+                    "en": "seconds",
+                    "sv": "sekunder"
+                }
+            }
+        ]
+    }
+]

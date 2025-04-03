@@ -1,0 +1,22 @@
+{
+    "id": "thermostat",
+    "name": {
+        "en": "LK ICS.2 Thermostat",
+        "sv": "LK ICS.2 Termostat"
+    },
+    "class": "thermostat",
+    "capabilities": [
+        "target_temperature",
+        "measure_temperature",
+        "measure_battery"
+    ],
+    "capabilitiesOptions": {
+        "measure_temperature": {
+            "decimals": 1
+        }
+    },
+    "energy": {
+        "batteries": ["AAA", "AAA", "AAA"]
+    },
+    "$extends": ["defaults"]
+}

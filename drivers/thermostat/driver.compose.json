@@ -18,7 +18,5 @@
   "energy": {
     "batteries": ["AAA", "AAA", "AAA"]
   },
-  "$extends": [
-    "defaults"
-  ]
+  "$extends": ["defaults"]
 }

@@ -1,0 +1,107 @@
+{
+  "id": "arc-sense",
+  "name": {
+    "en": "Arc Sense",
+    "sv": "Arc Sense"
+  },
+  "class": "thermostat",
+  "capabilities": [
+    "measure_battery",
+    "measure_humidity",
+    "measure_signal_strength",
+    "target_temperature",
+    "measure_temperature"
+  ],
+  "capabilitiesOptions": {
+    "target_temperature": {
+      "decimals": 1,
+      "step": 0.5,
+      "min": 5,
+      "max": 30
+    },
+    "measure_temperature": {
+      "decimals": 1
+    },
+    "measure_humidity": {
+      "decimals": 0
+    },
+    "measure_battery": {
+      "decimals": 0
+    },
+    "measure_signal_strength": {
+      "decimals": 0
+    }
+  },
+  "platforms": ["local"],
+  "connectivity": ["cloud"],
+  "images": {
+    "small": "{{driverAssetsPath}}/images/small.png",
+    "large": "{{driverAssetsPath}}/images/large.png",
+    "xlarge": "{{driverAssetsPath}}/images/xlarge.png"
+  },
+  "pair": [
+    {
+      "id": "login_credentials",
+      "template": "login_credentials",
+      "options": {
+        "logo": "../../../assets/logo.svg",
+        "title": {
+          "en": "Login to LK Systems",
+          "sv": "Logga in på LK Systems"
+        },
+        "usernameLabel": {
+          "en": "E-mail address",
+          "sv": "E-postadress"
+        },
+        "usernamePlaceholder": {
+          "en": "email@example.com",
+          "sv": "email@example.com"
+        },
+        "passwordLabel": {
+          "en": "Password",
+          "sv": "Lösenord"
+        },
+        "passwordPlaceholder": {
+          "en": "Password",
+          "sv": "Lösenord"
+        }
+      },
+      "navigation": {
+        "next": "list_devices"
+      }
+    },
+    {
+      "id": "list_devices",
+      "template": "list_devices",
+      "options": {
+        "title": {
+          "en": "Select your home",
+          "sv": "Välj ditt hem"
+        },
+        "singular": true
+      },
+      "navigation": {
+        "next": "list_devices2"
+      }
+    },
+    {
+      "id": "list_devices2",
+      "template": "list_devices",
+      "options": {
+        "title": {
+          "en": "Select Arc Sense devices",
+          "sv": "Välj Arc Sense enheter"
+        },
+        "singular": false
+      },
+      "navigation": {
+        "prev": "list_devices",
+        "next": "add_devices"
+      }
+    },
+    {
+      "id": "add_devices",
+      "template": "add_devices"
+    }
+  ]
+}

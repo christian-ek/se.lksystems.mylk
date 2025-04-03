@@ -1,0 +1,23 @@
+{
+    "id": "wss_master_unit",
+    "name": {
+        "en": "LK Master Unit WSS",
+        "sv": "LK Huvudenhet WSS"
+    },
+    "class": "other",
+    "capabilities": [
+        "onoff",
+        "measure_pressure"
+    ],
+    "capabilitiesOptions": {
+        "measure_pressure": {
+            "decimals": 1,
+            "units": {
+                "en": "bar"
+            }
+        }
+    },
+    "$extends": [
+        "defaults"
+    ]
+}

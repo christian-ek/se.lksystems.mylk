@@ -1,5 +1,3 @@
-'use strict';
-
 const Homey = require('homey');
 const { getThermostatStatus, doRequest } = require('../../lib/Utils');
 

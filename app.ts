@@ -1,6 +1,6 @@
-'use strict';
-
-const Homey = require('homey');
+import sourceMapSupport from 'source-map-support';
+import * as Homey from 'homey';
+sourceMapSupport.install();
 
 class LkApp extends Homey.App {
 
