@@ -1,90 +1,122 @@
 import { Device } from "homey";
+import type Homey from "homey/lib/Homey";
 import type { ArcSenseMeasurement } from "../../lib/lk-types";
-import type { DeviceData, HomeyWithSettings } from "../../lib/driver-types";
+import type { DeviceData } from "../../lib/driver-types";
 import { LkApi } from "../../lib/lk-api";
+import {
+  updateCapability,
+  convertToApiTemperature,
+  formatError,
+  scheduleUpdate,
+} from "../../lib/lk-utils";
+
+const UPDATE_INTERVAL_SECONDS = 30; // Set update interval
 
 interface DeviceSettings {
   email: string;
   password: string;
-  interval: number;
-  apiHost?: string;
   [key: string]: string | number | boolean | undefined;
 }
 
-interface HomeyDevice extends Device {
-  homey: HomeyWithSettings;
-}
+class ArcSenseDevice extends Device {
+  public readonly homey!: Homey;
 
-export default class ArcSenseDevice extends Device {
   private api!: LkApi;
   private deviceData!: DeviceData;
-  private updateInterval!: NodeJS.Timeout;
+  private updateTimeout!: NodeJS.Timeout;
   private pauseUpdates = false;
 
-  /**
-   * onInit is called when the device is initialized.
-   */
+  // Override log method to include device identifier
+  log(...args: unknown[]) {
+    if (this.deviceData?.id) {
+      super.log(`[${this.getName()}][${this.deviceData.id}]`, ...args);
+    } else {
+      super.log(`[${this.getName()}]`, ...args);
+    }
+  }
+
+  // Override error method to include device identifier
+  error(...args: unknown[]) {
+    if (this.deviceData?.id) {
+      super.error(`[${this.getName()}][${this.deviceData.id}]`, ...args);
+    } else {
+      super.error(`[${this.getName()}]`, ...args);
+    }
+  }
+
   async onInit() {
     this.log("ArcSense device has been initialized");
 
-    this.deviceData = this.getData();
-    this.log(`Device loaded: ${this.getName()} (ID: ${this.deviceData.id})`);
+    try {
+      this.deviceData = this.getData();
+      this.log("Device loaded");
 
-    // Initialize the API with the stored credentials
-    const settings = this.getSettings() as DeviceSettings;
-    this.api = new LkApi(
-      settings.email,
-      settings.password,
-      (this as unknown as HomeyDevice).homey,
-      settings.apiHost
-    );
+      const settings = this.getSettings() as DeviceSettings;
+      if (!settings.email || !settings.password) {
+        this.error(
+          "Email or password missing in settings during initialization."
+        );
+        await this.setUnavailable("Missing credentials").catch(this.error);
+        return;
+      }
 
-    // Set up capability listeners
-    this.registerCapabilityListener(
-      "target_temperature",
-      this.onCapabilityTargetTemperature.bind(this)
-    );
+      this.api = new LkApi(settings.email, settings.password, this.homey);
 
-    // Get initial device data
-    await this.fetchDeviceData();
+      await this.api.validateToken().catch(async (err) => {
+        this.error(`Initial token validation failed: ${err.message}`);
+        try {
+          await this.api.login();
+          this.log("Login successful after failed initial token validation.");
+        } catch (loginErr) {
+          this.error(
+            `Login failed during initialization: ${
+              loginErr instanceof Error ? loginErr.message : String(loginErr)
+            }`
+          );
+          await this.setUnavailable("Invalid credentials").catch(this.error);
+          return;
+        }
+      });
 
-    // Set up the update interval
-    this.startUpdateInterval();
-  }
+      this.registerCapabilityListener(
+        "target_temperature",
+        this.onCapabilityTargetTemperature.bind(this)
+      );
 
-  /**
-   * Start or restart the update interval
-   */
-  private startUpdateInterval() {
-    const settings = this.getSettings() as DeviceSettings;
-    let updateInterval = settings.interval * 1000;
-
-    // Ensure minimum interval is 10 seconds
-    if (!updateInterval || updateInterval < 10000) {
-      updateInterval = 10000;
-    }
-
-    this.log(
-      `Setting update interval to ${updateInterval}ms for ${this.getName()}`
-    );
-
-    // Clear existing interval if it exists
-    if (this.updateInterval) {
-      clearInterval(this.updateInterval);
-    }
-
-    // Set new interval
-    this.updateInterval = setInterval(async () => {
       await this.fetchDeviceData();
-    }, updateInterval);
+
+      await this.setAvailable().catch(this.error);
+    } catch (error) {
+      this.error(`Error during onInit: ${formatError(error)}`);
+      await this.setUnavailable("Initialization failed").catch(this.error);
+    }
   }
 
-  /**
-   * Fetch device data from the API
-   */
   private async fetchDeviceData() {
+    // Clear any existing timeout
+    if (this.updateTimeout) {
+      clearTimeout(this.updateTimeout);
+    }
+
     if (this.pauseUpdates) {
       this.log("Updates paused, skipping data fetch");
+      this.updateTimeout = scheduleUpdate(
+        this,
+        this.homey,
+        this.fetchDeviceData.bind(this),
+        UPDATE_INTERVAL_SECONDS
+      );
+      return;
+    }
+
+    if (!this.api) {
+      this.error("API client not initialized");
+      this.updateTimeout = scheduleUpdate(
+        this,
+        this.homey,
+        this.fetchDeviceData.bind(this),
+        UPDATE_INTERVAL_SECONDS
+      );
       return;
     }
 
@@ -94,147 +126,176 @@ export default class ArcSenseDevice extends Device {
       );
 
       if (!measurement) {
-        this.error("No measurement data received from API");
+        this.log("No measurement data received - device may be offline");
+        this.updateTimeout = scheduleUpdate(
+          this,
+          this.homey,
+          this.fetchDeviceData.bind(this),
+          UPDATE_INTERVAL_SECONDS
+        );
         return;
       }
 
-      this.log(`Retrieved measurement data for ${this.getName()}`);
+      // Mark device as available if it was unavailable
+      if (!this.getAvailable()) {
+        await this.setAvailable().catch(this.error);
+        this.log("Device marked as available after receiving data");
+      }
+
       await this.updateCapabilities(measurement);
-    } catch (error) {
-      this.error(
-        `Error fetching device data: ${
-          error instanceof Error ? error.message : String(error)
-        }`
+
+      // Schedule the next update
+      this.updateTimeout = scheduleUpdate(
+        this,
+        this.homey,
+        this.fetchDeviceData.bind(this),
+        UPDATE_INTERVAL_SECONDS
       );
-    }
-  }
-
-  /**
-   * Update device capabilities with fresh data
-   */
-  private async updateCapabilities(measurement: ArcSenseMeasurement) {
-    try {
-      // Current temperature - divided by 10 to convert from API format to degrees
-      if (
-        measurement.currentTemperature !== undefined &&
-        measurement.currentTemperature !== null
-      ) {
-        const temp = measurement.currentTemperature / 10;
-        await this.setCapabilityValue("measure_temperature", temp).catch(
-          this.error
-        );
-      }
-
-      // Target temperature - only update if not paused due to recent setting
-      if (
-        measurement.desiredTemperature !== undefined &&
-        measurement.desiredTemperature !== null &&
-        !this.pauseUpdates
-      ) {
-        const targetTemp = measurement.desiredTemperature / 10;
-        await this.setCapabilityValue("target_temperature", targetTemp).catch(
-          this.error
-        );
-      }
-
-      // Humidity - divided by 10 to convert from API format to percentage
-      if (
-        measurement.currentHumidity !== undefined &&
-        measurement.currentHumidity !== null
-      ) {
-        const humidity = measurement.currentHumidity / 10;
-        await this.setCapabilityValue("measure_humidity", humidity).catch(
-          this.error
-        );
-      }
-
-      // Battery level
-      if (
-        measurement.currentBattery !== undefined &&
-        measurement.currentBattery !== null
-      ) {
-        await this.setCapabilityValue(
-          "measure_battery",
-          measurement.currentBattery
-        ).catch(this.error);
-      }
-
-      // Signal strength
-      if (
-        measurement.currentRssi !== undefined &&
-        measurement.currentRssi !== null
-      ) {
-        await this.setCapabilityValue(
-          "measure_signal_strength",
-          measurement.currentRssi
-        ).catch(this.error);
-      }
     } catch (error) {
-      this.error(
-        `Error updating capabilities: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-    }
-  }
-
-  /**
-   * Handle target temperature capability changes
-   */
-  async onCapabilityTargetTemperature(value: number): Promise<void> {
-    this.log(`Setting target temperature to ${value}°C`);
-
-    try {
-      // Set the value locally first
-      await this.setCapabilityValue("target_temperature", value).catch(
+      this.error(`Error fetching data: ${formatError(error)}`);
+      await this.setUnavailable("Failed to fetch device data").catch(
         this.error
       );
 
-      // Prepare the temperature in the format expected by the API (degrees * 10)
-      const apiTemp = Math.round(value * 10);
+      // If there was an error, try again after a shorter delay
+      this.updateTimeout = scheduleUpdate(
+        this,
+        this.homey,
+        this.fetchDeviceData.bind(this),
+        Math.max(10, UPDATE_INTERVAL_SECONDS / 2)
+      );
+    }
+  }
 
-      // Pause automatic updates to avoid overwriting our change
+  private async updateCapabilities(measurement: ArcSenseMeasurement) {
+    try {
+      const promises: Array<Promise<void> | undefined> = [];
+
+      // Temperature (divide by 10 to convert from API format)
+      promises.push(
+        updateCapability(
+          this,
+          "measure_temperature",
+          measurement.currentTemperature != null
+            ? measurement.currentTemperature / 10
+            : undefined
+        )
+      );
+
+      // Target Temperature (only if not paused)
+      if (!this.pauseUpdates) {
+        promises.push(
+          updateCapability(
+            this,
+            "target_temperature",
+            measurement.desiredTemperature != null
+              ? measurement.desiredTemperature / 10
+              : undefined
+          )
+        );
+      } else if (
+        measurement.desiredTemperature != null &&
+        this.hasCapability("target_temperature")
+      ) {
+        const apiTargetTemp = measurement.desiredTemperature / 10;
+        if (this.getCapabilityValue("target_temperature") !== apiTargetTemp) {
+          this.log(
+            `Skipping target_temperature update to ${apiTargetTemp} (updates paused)`
+          );
+        }
+      }
+
+      // Humidity (divide by 10 to convert from API format)
+      promises.push(
+        updateCapability(
+          this,
+          "measure_humidity",
+          measurement.currentHumidity != null
+            ? measurement.currentHumidity / 10
+            : undefined
+        )
+      );
+
+      // Battery
+      promises.push(
+        updateCapability(this, "measure_battery", measurement.currentBattery)
+      );
+
+      // Signal Strength (RSSI)
+      promises.push(
+        updateCapability(
+          this,
+          "measure_signal_strength",
+          measurement.currentRssi
+        )
+      );
+
+      // Wait for all capability updates to complete
+      await Promise.all(promises.filter((p) => p !== undefined));
+    } catch (error) {
+      this.error(`Error processing capability updates: ${formatError(error)}`);
+    }
+  }
+
+  // No need for reinitializeApi method since we're not using it anymore
+
+  async onCapabilityTargetTemperature(value: number): Promise<void> {
+    this.log(`Setting temperature to ${value}°C`);
+
+    if (this.pauseUpdates) {
+      this.log("Ignoring temperature change - updates paused");
+      return;
+    }
+
+    if (!this.api) {
+      this.error("API client not initialized");
+      throw new Error("API not initialized");
+    }
+
+    try {
+      // Convert to API temperature format (multiply by 10)
+      const apiTemp = convertToApiTemperature(value);
+
+      // Pause updates to prevent conflicts
       this.pauseUpdates = true;
+      this.log(`Pausing updates while setting temperature to ${value}°C`);
 
-      // Send the update to the API
       const success = await this.api.updateArcSenseTemperature(
         this.deviceData.id,
         apiTemp
       );
 
-      if (success) {
-        this.log(
-          `Target temperature successfully set to ${value}°C (${apiTemp} in API format)`
-        );
-      } else {
-        this.error(`Failed to set target temperature to ${value}°C`);
+      if (!success) {
+        this.error(`Failed to set temperature to ${value}°C`);
+        this.pauseUpdates = false;
+        throw new Error("Failed to set target temperature");
       }
 
-      // Resume updates after delay to allow API to update
+      this.log(`Temperature set to ${value}°C (${apiTemp})`);
+
+      // Resume updates after delay
+      const resumeDelay = 30000; // 30 seconds
+      this.log(`Updates will resume in ${resumeDelay / 1000} seconds`);
+
       setTimeout(() => {
-        this.pauseUpdates = false;
-        this.log("Device updates resumed");
-      }, 30000); // 30 second pause
+        if (this.pauseUpdates) {
+          this.pauseUpdates = false;
+          this.log("Device updates resumed");
+          this.fetchDeviceData();
+        }
+      }, resumeDelay);
     } catch (error) {
-      this.error(
-        `Failed to set target temperature: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+      this.error(`Temperature setting error: ${formatError(error)}`);
       this.pauseUpdates = false;
+      this.log("Resuming updates due to error");
+      throw new Error(`Temperature setting error: ${formatError(error)}`);
     }
   }
 
-  /**
-   * onAdded is called when the user adds the device, called just after pairing.
-   */
   async onAdded() {
-    this.log(`ArcSense device has been added: ${this.getName()}`);
+    this.log("Device has been added");
   }
 
-  /**
-   * onSettings is called when the user updates the device's settings.
-   */
   async onSettings({
     oldSettings,
     newSettings,
@@ -243,75 +304,40 @@ export default class ArcSenseDevice extends Device {
     oldSettings: DeviceSettings;
     newSettings: DeviceSettings;
     changedKeys: string[];
-  }): Promise<string | undefined> {
-    this.log("ArcSense device settings were changed");
+  }): Promise<string> {
+    this.log("Updating device settings");
 
-    // Log changed settings (except password)
+    // Log changes (except password)
     for (const key of changedKeys) {
-      if (key !== "password") {
+      if (key === "password") {
+        this.log("Password changed");
+      } else {
         this.log(
           `Setting '${key}' changed from '${oldSettings[key]}' to '${newSettings[key]}'`
         );
-      } else {
-        this.log("Password was changed");
       }
     }
 
-    // Handle email, password or API host change
-    if (
-      changedKeys.includes("email") ||
-      changedKeys.includes("password") ||
-      changedKeys.includes("apiHost")
-    ) {
-      this.log("Reinitializing API connection with new credentials");
-      this.api = new LkApi(
-        newSettings.email,
-        newSettings.password,
-        this.homey,
-        newSettings.apiHost
-      );
-
-      // Test the new credentials
-      try {
-        await this.api.login();
-        this.log("New credentials validated successfully");
-      } catch (error) {
-        this.error(
-          `Failed to validate new credentials: ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
-        throw new Error(
-          "Invalid credentials. Please check your email and password."
-        );
-      }
-    }
-
-    // Handle interval change
-    if (changedKeys.includes("interval")) {
-      this.log("Update interval changed, restarting interval timer");
-      this.startUpdateInterval();
+    // Credentials changed - user needs to restart the app
+    if (changedKeys.includes("email") || changedKeys.includes("password")) {
+      this.log("Credentials changed - will take effect after app restart");
+      return "Settings saved. Restart the app for the new credentials to take effect.";
     }
 
     return "Settings saved successfully";
   }
 
-  /**
-   * onRenamed is called when the user updates the device's name.
-   */
   async onRenamed(name: string) {
     this.log(`Device renamed to ${name}`);
   }
 
-  /**
-   * onDeleted is called when the user deleted the device.
-   */
   async onDeleted() {
-    this.log(`ArcSense device has been deleted: ${this.getName()}`);
-
-    // Clean up interval
-    if (this.updateInterval) {
-      clearInterval(this.updateInterval);
+    this.log("Device has been deleted");
+    if (this.updateTimeout) {
+      clearTimeout(this.updateTimeout);
+      this.log("Cleared update timeout");
     }
   }
 }
+
+module.exports = ArcSenseDevice;

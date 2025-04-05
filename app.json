@@ -56,30 +56,6 @@
   "source": "https://github.com/christian-ek/se.lksystems.mylk",
   "drivers": [
     {
-      "name": {
-        "en": "arc-hub"
-      },
-      "class": "other",
-      "capabilities": [
-        "button",
-        "measure_signal_strength",
-        "thermostat_mode",
-        "onoff"
-      ],
-      "platforms": [
-        "local"
-      ],
-      "connectivity": [
-        "cloud"
-      ],
-      "images": {
-        "small": "/drivers/arc-hub/assets/images/small.png",
-        "large": "/drivers/arc-hub/assets/images/large.png",
-        "xlarge": "/drivers/arc-hub/assets/images/xlarge.png"
-      },
-      "id": "arc-hub"
-    },
-    {
       "id": "arc-sense",
       "name": {
         "en": "Arc Sense",
@@ -214,30 +190,6 @@
                 "sv": "Lösenord"
               },
               "value": ""
-            }
-          ]
-        },
-        {
-          "type": "group",
-          "label": {
-            "en": "Update Settings",
-            "sv": "Uppdateringsinställningar"
-          },
-          "children": [
-            {
-              "id": "interval",
-              "type": "number",
-              "label": {
-                "en": "Update interval (seconds)",
-                "sv": "Uppdateringsintervall (sekunder)"
-              },
-              "value": 30,
-              "min": 10,
-              "max": 600,
-              "units": {
-                "en": "seconds",
-                "sv": "sekunder"
-              }
             }
           ]
         }

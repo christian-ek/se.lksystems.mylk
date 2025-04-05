@@ -1,8 +1,11 @@
 import { SimpleClass } from "homey";
-import axios, {
-  type AxiosRequestConfig,
-  type AxiosError,
-  type RawAxiosRequestHeaders,
+import type Homey from "homey/lib/Homey";
+import axios from "axios";
+import type {
+  AxiosRequestConfig,
+  AxiosError,
+  RawAxiosRequestHeaders,
+  AxiosResponse,
 } from "axios";
 import type {
   LoginRequest,
@@ -21,23 +24,11 @@ import type {
   DeviceTitle,
   DeviceInformation,
   RealEstateStructure,
-  ValveState,
-  HubMode,
-  HubStructure,
   DeviceMeasurement,
+  HubStructure,
 } from "./lk-types";
+import { type ValveState, HubMode } from "./lk-types";
 
-// Homey typings
-interface Homey {
-  settings: {
-    get(key: string): unknown;
-    set(key: string, value: unknown): void;
-  };
-}
-
-/**
- * Client for the Lk API that uses Homey's SimpleClass for logging
- */
 export class LkApi extends SimpleClass {
   private readonly SUBSCRIPTION_KEY: string =
     "deb63224fa0443d5a8e9167e88b4b4d9";
@@ -49,13 +40,6 @@ export class LkApi extends SimpleClass {
   private refreshToken: string | null | undefined;
   private homey: Homey;
 
-  /**
-   * Construct the client
-   * @param email - Email for logging into the Lk API
-   * @param password - Password for logging into the Lk API
-   * @param homey - Homey instance
-   * @param apiHost - Optional custom API host
-   */
   constructor(
     email: string,
     password: string,
@@ -70,560 +54,582 @@ export class LkApi extends SimpleClass {
     this.authBaseUrl = `${apiHost}/auth`;
     this.serviceBaseUrl = `${apiHost}/service`;
 
-    // Try to load stored token
-    const storedAccessToken = this.homey.settings.get("lkAccessToken");
-    const storedRefreshToken = this.homey.settings.get("lkRefreshToken");
-
-    if (typeof storedAccessToken === "string") {
-      this.accessToken = storedAccessToken;
-    }
-
-    if (typeof storedRefreshToken === "string") {
-      this.refreshToken = storedRefreshToken;
-    }
-
-    /* Validate the configuration */
     if (!email || !password) {
-      this.error("Email and password not found in config");
-      throw new Error(
-        'Not all required configuration values found. Need "email" and "password".'
-      );
+      this.error("Email and/or password not provided to LkApi constructor.");
+      throw new Error("LkApi requires valid email and password.");
     }
 
-    /* Configure axios defaults */
+    this.loadTokens();
+    this.log(`LkApi initialized for host: ${apiHost}`);
+
     axios.defaults.headers.common = {
       "Content-Type": "application/json",
       "Api-Version": "1.0",
       "Ocp-Apim-Subscription-Key": this.SUBSCRIPTION_KEY,
     };
 
-    /* Configure an interceptor to refresh our authentication credentials */
+    this.setupAxiosInterceptor();
+  }
+
+  private loadTokens(): void {
+    const storedAccessToken = this.homey.settings.get("lkAccessToken");
+    const storedRefreshToken = this.homey.settings.get("lkRefreshToken");
+
+    if (typeof storedAccessToken === "string" && storedAccessToken) {
+      this.accessToken = storedAccessToken;
+      this.log("Loaded access token from settings.");
+    } else {
+      this.accessToken = null;
+      this.log("No valid access token found in settings.");
+    }
+
+    if (typeof storedRefreshToken === "string" && storedRefreshToken) {
+      this.refreshToken = storedRefreshToken;
+      this.log("Loaded refresh token from settings.");
+    } else {
+      this.refreshToken = null;
+      this.log("No valid refresh token found in settings.");
+    }
+  }
+
+  private saveTokens(access: string | null, refresh: string | null): void {
+    this.homey.settings.set("lkAccessToken", access);
+    this.homey.settings.set("lkRefreshToken", refresh);
+    this.accessToken = access;
+    this.refreshToken = refresh;
+    if (access) this.log("Saved new access token.");
+    else this.log("Cleared access token.");
+    if (refresh) this.log("Saved new refresh token.");
+    else this.log("Cleared refresh token.");
+  }
+
+  private clearTokens(): void {
+    this.saveTokens(null, null);
+  }
+
+  private setupAxiosInterceptor(): void {
     axios.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
-        /* Return any error not due to authentication */
-        if (!error.response || error.response.status !== 401) {
+        const originalRequest = error.config;
+
+        if (!originalRequest || error.response?.status !== 401) {
           return Promise.reject(error);
         }
 
-        /* Reject if we were trying to authenticate and it failed */
-        if (
-          error.config?.url?.includes("/auth/login") ||
-          error.config?.url?.includes("/auth/refresh")
-        ) {
+        if (originalRequest.url?.includes("/auth/refresh")) {
+          this.error("Refresh token request failed with 401. Clearing tokens.");
+          this.clearTokens();
           return Promise.reject(error);
         }
 
-        /* Try to refresh the token and retry the request */
+        if (originalRequest.url?.includes("/auth/login")) {
+          this.error("Login request failed with 401.");
+          return Promise.reject(error);
+        }
+
+        this.log(
+          `Intercepted 401 error for ${originalRequest.method?.toUpperCase()} ${
+            originalRequest.url
+          }. Attempting token refresh/login.`
+        );
+
         try {
-          let newToken: string;
+          let newAccessToken: string | null;
 
-          // Try to refresh the token first if we have a refresh token
           if (this.refreshToken) {
+            this.log("Attempting token refresh using existing refresh token.");
             try {
               const refreshResponse = await this.refreshAccessToken();
-              if (refreshResponse.accessToken === null) {
-                throw new Error("Received null access token from refresh");
-              }
-              newToken = refreshResponse.accessToken;
+              newAccessToken = refreshResponse.accessToken;
             } catch (refreshError) {
-              // If refresh fails, try a full login
+              this.error(
+                `Token refresh failed: ${
+                  refreshError instanceof Error
+                    ? refreshError.message
+                    : String(refreshError)
+                }. Attempting full login as fallback.`
+              );
               const loginResponse = await this.login();
-              if (loginResponse.accessToken === null) {
-                throw new Error("Received null access token from login");
-              }
-              newToken = loginResponse.accessToken;
+              newAccessToken = loginResponse.accessToken;
             }
           } else {
-            // No refresh token, do a full login
+            this.log("No refresh token available, attempting full login.");
             const loginResponse = await this.login();
-            if (loginResponse.accessToken === null) {
-              throw new Error("Received null access token from login");
-            }
-            newToken = loginResponse.accessToken;
+            newAccessToken = loginResponse.accessToken;
           }
 
-          // New request with new token
-          if (error.config) {
-            // Set the Authorization header directly
-            if (error.config.headers) {
-              error.config.headers.Authorization = `Bearer ${newToken}`;
-            }
-            return axios.request(error.config);
+          if (!newAccessToken) {
+            throw new Error("Failed to obtain a new access token after 401.");
           }
-          return Promise.reject(new Error("Request config not available"));
+
+          this.log(
+            "Successfully obtained new access token. Retrying original request."
+          );
+
+          originalRequest.headers = originalRequest.headers ?? {};
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+          if (!originalRequest.headers["Ocp-Apim-Subscription-Key"]) {
+            originalRequest.headers["Ocp-Apim-Subscription-Key"] =
+              this.SUBSCRIPTION_KEY;
+          }
+          if (!originalRequest.headers["Api-Version"]) {
+            originalRequest.headers["Api-Version"] = "1.0";
+          }
+          if (
+            !originalRequest.headers["Content-Type"] &&
+            originalRequest.data
+          ) {
+            originalRequest.headers["Content-Type"] = "application/json";
+          }
+
+          return axios(originalRequest);
         } catch (authError) {
-          return Promise.reject(authError);
+          this.error(
+            `Failed to re-authenticate after 401: ${
+              authError instanceof Error ? authError.message : String(authError)
+            }. Clearing tokens.`
+          );
+          this.clearTokens();
+          return Promise.reject(error);
         }
       }
     );
   }
 
-  /**
-   * Authenticate with the Lk API
-   * @returns Promise with login response containing access token
-   */
   async login(): Promise<LoginResponse> {
     const data: LoginRequest = {
       email: this.email,
       password: this.password,
     };
+    this.log(`Attempting login with email: ${this.email}`);
 
-    this.log(`Sending login request with email: ${this.email}`);
+    const requestHeaders: RawAxiosRequestHeaders = {
+      "Content-Type": "application/json",
+      "Api-Version": "1.0",
+      "Ocp-Apim-Subscription-Key": this.SUBSCRIPTION_KEY,
+    };
 
     try {
       const response = await axios.post<LoginResponse>(
         `${this.authBaseUrl}/auth/login`,
-        data
+        data,
+        { headers: requestHeaders }
       );
-      this.accessToken = response.data.accessToken;
-      this.refreshToken = response.data.refreshToken;
 
-      // Store tokens for later use
-      this.homey.settings.set("lkAccessToken", response.data.accessToken);
-      this.homey.settings.set("lkRefreshToken", response.data.refreshToken);
+      if (!response.data.accessToken || !response.data.refreshToken) {
+        throw new Error("Login response missing access or refresh token.");
+      }
 
+      this.saveTokens(response.data.accessToken, response.data.refreshToken);
       this.log(
-        `Authentication successful, token expires in ${response.data.accessTokenExpire} seconds`
+        `Login successful. Token expires in ${response.data.accessTokenExpire} seconds.`
       );
       return response.data;
     } catch (error) {
+      this.error(
+        `Login failed: ${
+          error instanceof Error
+            ? error.message
+            : this.formatAxiosError(error as AxiosError)
+        }`
+      );
+      this.clearTokens();
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        this.error("Authentication failed: Invalid credentials");
-        throw new Error("Invalid email or password");
+        throw new Error("Invalid email or password.");
       }
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.error(`Authentication failed: ${errorMessage}`);
       throw error;
     }
   }
 
-  /**
-   * Refresh the access token using the refresh token
-   * @returns Promise with login response containing new access token
-   */
   async refreshAccessToken(): Promise<LoginResponse> {
     if (!this.refreshToken) {
-      throw new Error("No refresh token available, please log in first");
+      this.error("Cannot refresh token: No refresh token available.");
+      throw new Error("No refresh token available.");
     }
 
-    const data: RefreshRequest = {
-      refreshToken: this.refreshToken,
+    this.log("Attempting to refresh access token.");
+    const data: RefreshRequest = { refreshToken: this.refreshToken };
+
+    const requestHeaders: RawAxiosRequestHeaders = {
+      "Content-Type": "application/json",
+      "Api-Version": "1.0",
+      "Ocp-Apim-Subscription-Key": this.SUBSCRIPTION_KEY,
     };
 
     try {
       const response = await axios.post<LoginResponse>(
         `${this.authBaseUrl}/auth/refresh`,
-        data
+        data,
+        { headers: requestHeaders }
       );
-      this.accessToken = response.data.accessToken;
-      this.refreshToken = response.data.refreshToken;
 
-      // Update stored tokens
-      this.homey.settings.set("lkAccessToken", response.data.accessToken);
-      this.homey.settings.set("lkRefreshToken", response.data.refreshToken);
+      if (!response.data.accessToken || !response.data.refreshToken) {
+        throw new Error(
+          "Token refresh response missing access or refresh token."
+        );
+      }
 
+      this.saveTokens(response.data.accessToken, response.data.refreshToken);
       this.log(
-        `Token refreshed successfully, new token expires in ${response.data.accessTokenExpire} seconds`
+        `Token refreshed successfully. New token expires in ${response.data.accessTokenExpire} seconds.`
       );
       return response.data;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.error(`Token refresh failed: ${errorMessage}`);
+      this.error(
+        `Token refresh failed: ${
+          error instanceof Error
+            ? error.message
+            : this.formatAxiosError(error as AxiosError)
+        }`
+      );
       throw error;
     }
   }
 
-  /**
-   * Get the current user information
-   * @returns Promise with user information
-   */
+  private async makeAuthorizedRequest<T>(
+    endpoint: string,
+    method = "GET",
+    data?: unknown,
+    urlType: "service" | "auth" = "service"
+  ): Promise<T> {
+    if (!this.accessToken) {
+      this.log(
+        `No access token found before ${method} ${endpoint}. Attempting login.`
+      );
+      try {
+        await this.login();
+        if (!this.accessToken) {
+          throw new Error("Failed to obtain valid access token via login.");
+        }
+        this.log("Login successful, proceeding with original request.");
+      } catch (loginError) {
+        this.error(
+          `Login attempt failed during authorized request: ${
+            loginError instanceof Error
+              ? loginError.message
+              : String(loginError)
+          }`
+        );
+        throw new Error(
+          `Authentication required for ${method} ${endpoint}, but login failed.`
+        );
+      }
+    }
+
+    const baseUrl = urlType === "auth" ? this.authBaseUrl : this.serviceBaseUrl;
+    const fullUrl = `${baseUrl}${endpoint}`;
+
+    const config: AxiosRequestConfig = {
+      method,
+      url: fullUrl,
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        "Ocp-Apim-Subscription-Key": this.SUBSCRIPTION_KEY,
+        "Api-Version": "1.0",
+      } as RawAxiosRequestHeaders,
+      data,
+    };
+
+    if (data) {
+      (config.headers as RawAxiosRequestHeaders)["Content-Type"] =
+        "application/json";
+    }
+
+    this.log(`Making authorized ${method} request to: ${fullUrl}`);
+
+    try {
+      const response: AxiosResponse<T> = await axios(config);
+      return response.data;
+    } catch (error) {
+      this.error(
+        `Error during ${method} ${fullUrl}: ${
+          error instanceof Error
+            ? error.message
+            : this.formatAxiosError(error as AxiosError)
+        }`
+      );
+      throw error;
+    }
+  }
+
+  // API Methods
   async getUserInfo(): Promise<UserInfo> {
     return this.makeAuthorizedRequest<UserInfo>(
-      `${this.authBaseUrl}/auth/user`,
-      "GET"
+      "/auth/user",
+      "GET",
+      undefined,
+      "auth"
     );
   }
 
-  /**
-   * Get user structure (homes/realestates)
-   * @param userId The user ID
-   * @returns Promise with user structure information
-   */
   async getUserStructure(userId: string): Promise<RealEstateStructure[]> {
     return this.makeAuthorizedRequest<RealEstateStructure[]>(
-      `${this.serviceBaseUrl}/users/user/${userId}/structure/false`,
+      `/users/user/${encodeURIComponent(userId)}/structure/false`,
       "GET"
     );
   }
 
-  /**
-   * Get real estate information
-   * @param realestateId The real estate ID
-   * @returns Promise with real estate information
-   */
   async getRealEstateTitle(realestateId: string): Promise<RealEstate> {
     return this.makeAuthorizedRequest<RealEstate>(
-      `${this.serviceBaseUrl}/structure/realestate/${realestateId}/title/false`,
+      `/structure/realestate/${encodeURIComponent(realestateId)}/title/false`,
       "GET"
     );
   }
 
-  /**
-   * Get real estate measurements (all devices status)
-   * @param realestateId The real estate ID
-   * @returns Promise with measurements for all devices
-   */
   async getRealEstateMeasurements(
     realestateId: string
   ): Promise<DeviceMeasurement[]> {
     return this.makeAuthorizedRequest<DeviceMeasurement[]>(
-      `${this.serviceBaseUrl}/structure/realestate/${realestateId}/measurements/false`,
+      `/structure/realestate/${encodeURIComponent(
+        realestateId
+      )}/measurements/false`,
       "GET"
     );
   }
 
-  /**
-   * Get real estate machines (all devices)
-   * @param realestateId The real estate ID
-   * @returns Promise with all devices in the real estate
-   */
   async getRealEstateMachines(realestateId: string): Promise<DeviceTitle[]> {
     return this.makeAuthorizedRequest<DeviceTitle[]>(
-      `${this.serviceBaseUrl}/structure/realestate/${realestateId}/realestateMachines/false`,
+      `/structure/realestate/${encodeURIComponent(
+        realestateId
+      )}/realestateMachines/false`,
       "GET"
     );
   }
 
-  /**
-   * Get ArcHub configuration
-   * @param serialNumber The hub serial number
-   * @returns Promise with hub configuration
-   */
   async getArcHubConfiguration(serialNumber: string): Promise<ArcHubConfig> {
     return this.makeAuthorizedRequest<ArcHubConfig>(
-      `${this.serviceBaseUrl}/arc/hub/${serialNumber}/configuration/false`,
+      `/arc/hub/${encodeURIComponent(serialNumber)}/configuration/false`,
       "GET"
     );
   }
 
-  /**
-   * Get ArcHub measurement data
-   * @param serialNumber The hub serial number
-   * @returns Promise with hub measurement data
-   */
   async getArcHubMeasurement(serialNumber: string): Promise<ArcHubMeasurement> {
     return this.makeAuthorizedRequest<ArcHubMeasurement>(
-      `${this.serviceBaseUrl}/arc/hub/${serialNumber}/measurement/false`,
+      `/arc/hub/${encodeURIComponent(serialNumber)}/measurement/false`,
       "GET"
     );
   }
 
-  /**
-   * Get ArcHub structure (connected devices)
-   * @param serialNumber The hub serial number
-   * @returns Promise with hub structure data
-   */
   async getArcHubStructure(serialNumber: string): Promise<HubStructure> {
     return this.makeAuthorizedRequest<HubStructure>(
-      `${this.serviceBaseUrl}/arc/hub/${serialNumber}/structure/false`,
+      `/arc/hub/${encodeURIComponent(serialNumber)}/structure/false`,
       "GET"
     );
   }
 
-  /**
-   * Get ArcSense configuration
-   * @param mac The sensor MAC address
-   * @returns Promise with sensor configuration
-   */
-  async getArcSenseConfiguration(mac: string): Promise<ArcSenseConfig> {
-    return this.makeAuthorizedRequest<ArcSenseConfig>(
-      `${this.serviceBaseUrl}/arc/sense/${mac}/configuration/false`,
-      "GET"
-    );
-  }
-
-  /**
-   * Get ArcSense measurement data
-   * @param mac The sensor MAC address
-   * @returns Promise with sensor measurement data
-   */
-  async getArcSenseMeasurement(mac: string): Promise<ArcSenseMeasurement> {
-    return this.makeAuthorizedRequest<ArcSenseMeasurement>(
-      `${this.serviceBaseUrl}/arc/sense/${mac}/measurement/false`,
-      "GET"
-    );
-  }
-
-  /**
-   * Get CubicSecure configuration
-   * @param serialNumber The device serial number
-   * @returns Promise with device configuration
-   */
-  async getCubicSecureConfiguration(
-    serialNumber: string
-  ): Promise<CubicSecureConfig> {
-    return this.makeAuthorizedRequest<CubicSecureConfig>(
-      `${this.serviceBaseUrl}/cubic/secure/${serialNumber}/configuration/false`,
-      "GET"
-    );
-  }
-
-  /**
-   * Get CubicSecure measurement data
-   * @param serialNumber The device serial number
-   * @returns Promise with device measurement data
-   */
-  async getCubicSecureMeasurement(
-    serialNumber: string
-  ): Promise<CubicSecureMeasurement> {
-    return this.makeAuthorizedRequest<CubicSecureMeasurement>(
-      `${this.serviceBaseUrl}/cubic/secure/${serialNumber}/measurement/false`,
-      "GET"
-    );
-  }
-
-  /**
-   * Get CubicDetector configuration
-   * @param serialNumber The device serial number
-   * @returns Promise with device configuration
-   */
-  async getCubicDetectorConfiguration(
-    serialNumber: string
-  ): Promise<CubicDetectorConfig> {
-    return this.makeAuthorizedRequest<CubicDetectorConfig>(
-      `${this.serviceBaseUrl}/cubic/detector/${serialNumber}/configuration/false`,
-      "GET"
-    );
-  }
-
-  /**
-   * Get CubicDetector measurement data
-   * @param serialNumber The device serial number
-   * @returns Promise with device measurement data
-   */
-  async getCubicDetectorMeasurement(
-    serialNumber: string
-  ): Promise<CubicDetectorMeasurement> {
-    return this.makeAuthorizedRequest<CubicDetectorMeasurement>(
-      `${this.serviceBaseUrl}/cubic/detector/${serialNumber}/measurement/false`,
-      "GET"
-    );
-  }
-
-  /**
-   * Get device information
-   * @param deviceIdentity The device identity/serial
-   * @returns Promise with device information
-   */
-  async getDeviceInformation(
-    deviceIdentity: string
-  ): Promise<DeviceInformation> {
-    return this.makeAuthorizedRequest<DeviceInformation>(
-      `${this.serviceBaseUrl}/devices/device/${deviceIdentity}/information/false`,
-      "GET"
-    );
-  }
-
-  /**
-   * Get device title information
-   * @param deviceIdentity The device identity/serial
-   * @returns Promise with device title information
-   */
-  async getDeviceTitle(deviceIdentity: string): Promise<DeviceTitle> {
-    return this.makeAuthorizedRequest<DeviceTitle>(
-      `${this.serviceBaseUrl}/devices/device/${deviceIdentity}/title/false`,
-      "GET"
-    );
-  }
-
-  /**
-   * Update ArcSense temperature setpoint
-   * @param mac The sensor MAC address
-   * @param desiredTemperature The desired temperature value
-   * @returns Promise indicating success
-   */
-  async updateArcSenseTemperature(
-    mac: string,
-    desiredTemperature: number
-  ): Promise<boolean> {
-    try {
-      // Based on API exploration and OpenAPI spec
-      const data = { desiredTemperature };
-      await this.makeAuthorizedRequest(
-        `${this.serviceBaseUrl}/arc/sense/${mac}/setpoint/false`,
-        "PUT",
-        data
-      );
-      this.log(
-        `Successfully set temperature to ${
-          desiredTemperature / 10
-        }°C for device ${mac}`
-      );
-      return true;
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.error(`Failed to update temperature: ${errorMessage}`);
-      return false;
-    }
-  }
-
-  /**
-   * Update ArcHub mode (heating/cooling)
-   * @param serialNumber The hub serial number
-   * @param mode The mode value (from HubMode enum)
-   * @returns Promise indicating success
-   */
   async updateArcHubMode(
     serialNumber: string,
     mode: HubMode
   ): Promise<boolean> {
     try {
-      // Based on the pattern in the API, this is the likely endpoint
-      const data = { mode };
       await this.makeAuthorizedRequest(
-        `${this.serviceBaseUrl}/arc/hub/${serialNumber}/mode/false`,
+        `/arc/hub/${encodeURIComponent(serialNumber)}/mode/false`,
         "PUT",
-        data
+        { mode }
+      );
+      this.log(
+        `Successfully updated ArcHub mode for ${serialNumber} to ${HubMode[mode]}`
       );
       return true;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.error(`Failed to update hub mode: ${errorMessage}`);
+      this.error(
+        `Failed to update ArcHub mode for ${serialNumber}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
       return false;
     }
   }
 
-  /**
-   * Update ArcHub LED state
-   * @param serialNumber The hub serial number
-   * @param ledsEnabled Whether LEDs should be enabled
-   * @returns Promise indicating success
-   */
   async updateArcHubLeds(
     serialNumber: string,
     ledsEnabled: boolean
   ): Promise<boolean> {
     try {
-      // Based on the pattern in the API, this is the likely endpoint
-      const data = { ledsEnabled };
       await this.makeAuthorizedRequest(
-        `${this.serviceBaseUrl}/arc/hub/${serialNumber}/leds/false`,
+        `/arc/hub/${encodeURIComponent(serialNumber)}/leds/false`,
         "PUT",
-        data
+        { ledsEnabled }
+      );
+      this.log(
+        `Successfully updated ArcHub LEDs for ${serialNumber} to ${
+          ledsEnabled ? "enabled" : "disabled"
+        }`
       );
       return true;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.error(`Failed to update LED state: ${errorMessage}`);
+      this.error(
+        `Failed to update ArcHub LEDs for ${serialNumber}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
       return false;
     }
   }
 
-  /**
-   * Update CubicSecure valve state (open/close)
-   * @param serialNumber The device serial number
-   * @param valveState The valve state (from ValveState enum)
-   * @returns Promise indicating success
-   */
+  async getArcSenseConfiguration(mac: string): Promise<ArcSenseConfig> {
+    return this.makeAuthorizedRequest<ArcSenseConfig>(
+      `/arc/sense/${encodeURIComponent(mac)}/configuration/false`,
+      "GET"
+    );
+  }
+
+  async getArcSenseMeasurement(mac: string): Promise<ArcSenseMeasurement> {
+    return this.makeAuthorizedRequest<ArcSenseMeasurement>(
+      `/arc/sense/${encodeURIComponent(mac)}/measurement/true`,
+      "GET"
+    );
+  }
+
+  async updateArcSenseTemperature(
+    mac: string,
+    desiredTemperature: number
+  ): Promise<boolean> {
+    try {
+      const data = { desiredTemperature };
+      await this.makeAuthorizedRequest(
+        `/arc/sense/${encodeURIComponent(mac)}/setpoint/false`,
+        "PUT",
+        data
+      );
+      this.log(
+        `Successfully set target temperature to ${
+          desiredTemperature / 10
+        }°C for ArcSense ${mac}`
+      );
+      return true;
+    } catch (error) {
+      this.error(
+        `Failed to update ArcSense temperature for ${mac}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return false;
+    }
+  }
+
+  async getCubicSecureConfiguration(
+    serialNumber: string
+  ): Promise<CubicSecureConfig> {
+    return this.makeAuthorizedRequest<CubicSecureConfig>(
+      `/cubic/secure/${encodeURIComponent(serialNumber)}/configuration/false`,
+      "GET"
+    );
+  }
+
+  async getCubicSecureMeasurement(
+    serialNumber: string
+  ): Promise<CubicSecureMeasurement> {
+    return this.makeAuthorizedRequest<CubicSecureMeasurement>(
+      `/cubic/secure/${encodeURIComponent(serialNumber)}/measurement/false`,
+      "GET"
+    );
+  }
+
   async updateCubicSecureValveState(
     serialNumber: string,
     valveState: ValveState
   ): Promise<boolean> {
     try {
-      // Based on the pattern in the API, this is the likely endpoint
-      const data = { valveState };
       await this.makeAuthorizedRequest(
-        `${this.serviceBaseUrl}/cubic/secure/${serialNumber}/valve/false`,
+        `/cubic/secure/${encodeURIComponent(serialNumber)}/valve/false`,
         "PUT",
-        data
+        { valveState }
+      );
+      this.log(
+        `Successfully updated CubicSecure valve state for ${serialNumber} to ${valveState}`
       );
       return true;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.error(`Failed to update valve state: ${errorMessage}`);
-      return false;
-    }
-  }
-
-  /**
-   * Make an authorized request to the API
-   * @param url The endpoint URL
-   * @param method The HTTP method
-   * @param data Optional data to send
-   * @returns Promise with the response data
-   */
-  private async makeAuthorizedRequest<T>(
-    url: string,
-    method = "GET",
-    data?: unknown
-  ): Promise<T> {
-    // Ensure we have a token
-    if (!this.accessToken) {
-      const loginResponse = await this.login();
-      if (loginResponse.accessToken === null) {
-        throw new Error("Received null access token from login");
-      }
-    }
-
-    if (this.accessToken === null) {
-      throw new Error("Access token is null");
-    }
-
-    const config: AxiosRequestConfig = {
-      method,
-      url,
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-      } as RawAxiosRequestHeaders,
-      data,
-    };
-
-    try {
-      this.log(`Making ${method} request to: ${url}`);
-      const response = await axios(config);
-      return response.data;
-    } catch (error) {
-      // The interceptor should handle auth errors, but just in case
-      if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.message || error.message;
-        this.error(`Error calling ${url}: ${errorMessage}`);
-      } else {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        this.error(`Error calling ${url}: ${errorMessage}`);
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * Validate the current access token
-   * @returns Promise<boolean> indicating if token is valid
-   */
-  async validateToken(): Promise<boolean> {
-    if (!this.accessToken || this.accessToken === null) {
-      return false;
-    }
-
-    try {
-      const response = await axios.get<boolean>(
-        `${this.authBaseUrl}/validate/token`,
-        {
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-          },
-        }
+      this.error(
+        `Failed to update CubicSecure valve state for ${serialNumber}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       );
-      return response.data;
-    } catch (error) {
       return false;
     }
+  }
+
+  async getCubicDetectorConfiguration(
+    serialNumber: string
+  ): Promise<CubicDetectorConfig> {
+    return this.makeAuthorizedRequest<CubicDetectorConfig>(
+      `/cubic/detector/${encodeURIComponent(serialNumber)}/configuration/false`,
+      "GET"
+    );
+  }
+
+  async getCubicDetectorMeasurement(
+    serialNumber: string
+  ): Promise<CubicDetectorMeasurement> {
+    return this.makeAuthorizedRequest<CubicDetectorMeasurement>(
+      `/cubic/detector/${encodeURIComponent(serialNumber)}/measurement/false`,
+      "GET"
+    );
+  }
+
+  async getDeviceInformation(
+    deviceIdentity: string
+  ): Promise<DeviceInformation> {
+    return this.makeAuthorizedRequest<DeviceInformation>(
+      `/devices/device/${encodeURIComponent(deviceIdentity)}/information/false`,
+      "GET"
+    );
+  }
+
+  async getDeviceTitle(deviceIdentity: string): Promise<DeviceTitle> {
+    return this.makeAuthorizedRequest<DeviceTitle>(
+      `/devices/device/${encodeURIComponent(deviceIdentity)}/title/false`,
+      "GET"
+    );
+  }
+
+  async validateToken(): Promise<boolean> {
+    if (!this.accessToken) {
+      this.log("Token validation check: No access token available.");
+      return false;
+    }
+    try {
+      this.log("Validating token by attempting to fetch user info...");
+      await this.getUserInfo();
+      this.log(
+        "Token validation check: Successfully fetched user info, token appears valid."
+      );
+      return true;
+    } catch (error) {
+      this.error(
+        `Token validation check failed: ${
+          error instanceof Error
+            ? error.message
+            : this.formatAxiosError(error as AxiosError)
+        }`
+      );
+      return false;
+    }
+  }
+
+  private formatAxiosError(error: AxiosError): string {
+    if (error.response) {
+      const status = error.response.status;
+      let responseData = error.response.data;
+      if (typeof responseData === "object" && responseData !== null) {
+        try {
+          responseData = JSON.stringify(responseData);
+        } catch (e) {
+          responseData = "(Could not stringify response data)";
+        }
+      }
+      return `Status ${status} - Response: ${
+        responseData || "(No response data)"
+      }`;
+    }
+
+    if (error.request) {
+      return "No response received from server.";
+    }
+
+    return `Error setting up request: ${error.message}`;
   }
 }

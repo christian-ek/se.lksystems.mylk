@@ -44,17 +44,4 @@ export interface DeviceItem {
     apiHost?: string;
     interval?: number;
   };
-  capabilities: string[];
-}
-
-/**
- * Homey interface with settings access
- */
-export interface HomeyWithSettings {
-  settings: {
-    get(key: string): unknown;
-    set(key: string, value: unknown): void;
-  };
-  log(...args: unknown[]): void;
-  error(...args: unknown[]): void;
 }
