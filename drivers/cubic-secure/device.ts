@@ -6,7 +6,7 @@ import type {
 } from "../../lib/lk-types";
 import type { DeviceData } from "../../lib/driver-types";
 import { LkApi } from "../../lib/lk-api";
-import { ValveState } from "../../lib/lk-types";
+import { ValveState, LeakState } from "../../lib/lk-types";
 import {
   updateCapability,
   formatError,
@@ -219,8 +219,8 @@ class CubicSecureDevice extends Device {
       const promises: Array<Promise<void> | undefined> = [];
 
       // Update water leak alarm
-      const leakState = measurement.leak?.leakState || "";
-      const hasLeak = leakState !== "" && leakState !== "noLeak";
+      const leakState = measurement.leak?.leakState;
+      const hasLeak = leakState !== null && leakState !== LeakState.NO_LEAK;
       promises.push(updateCapability(this, "alarm_water", hasLeak ? 1 : 0));
 
       // Update on/off based on valve state

@@ -3,6 +3,7 @@ import type Homey from "homey/lib/Homey";
 import type { CubicDetectorMeasurement } from "../../lib/lk-types";
 import type { DeviceData } from "../../lib/driver-types";
 import { LkApi } from "../../lib/lk-api";
+import { LeakState } from "../../lib/lk-types";
 import {
   updateCapability,
   formatError,
@@ -154,8 +155,8 @@ class CubicDetectorDevice extends Device {
       const promises: Array<Promise<void> | undefined> = [];
 
       // Update water leak alarm
-      const leakState = measurement.leak?.leakState || "";
-      const hasLeak = leakState !== "" && leakState !== "noLeak";
+      const leakState = measurement.leak?.leakState;
+      const hasLeak = leakState !== null && leakState !== LeakState.NO_LEAK;
       promises.push(updateCapability(this, "alarm_water", hasLeak ? 1 : 0));
 
       // Temperature

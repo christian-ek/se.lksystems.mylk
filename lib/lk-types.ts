@@ -103,7 +103,7 @@ export interface ArcHubConfig {
 export interface ArcHubMeasurement {
   serialNumber: string | null;
   iotId: string | null;
-  connectionState: string | null;
+  connectionState: ConnectionState | null;
   rssi: number;
   isWired: boolean;
   lastActivityTime: string | null;
@@ -126,7 +126,7 @@ export interface ArcSenseMeasurement {
   currentBattery: number | null;
   desiredTemperature: number | null;
   lastActivityTime: string | null;
-  connectionState: string | null;
+  connectionState: ConnectionState | null;
   actuators: Array<{
     n: number; // Actuator number
     s: number; // Actuator state (0 = off, 1 = on)
@@ -153,10 +153,22 @@ export interface ArcSenseConfig {
 }
 
 /**
+ * LeakState enum for leak detection systems
+ */
+export enum LeakState {
+  NO_LEAK = "noLeak",
+  PRESSURE = "pressure",
+  SMALL = "small",
+  MEDIUM = "medium",
+  LARGE = "large",
+  FORCE_OPEN = "forceOpen",
+}
+
+/**
  * CubicLeak interface for leak information
  */
 export interface CubicLeak {
-  leakState: string | null;
+  leakState: LeakState | null;
   meanFlow: number;
   dateStartedAt: number;
   dateUpdatedAt: number;
@@ -204,7 +216,7 @@ export interface CubicSecureConfig {
  */
 export interface CubicSecureMeasurement {
   serialNumber: string | null;
-  connectionState: string | null;
+  connectionState: ConnectionState | null;
   rssi: number;
   currentRssi: number;
   lastStatus: number;
@@ -238,7 +250,7 @@ export interface CubicDetectorConfig {
  */
 export interface CubicDetectorMeasurement {
   serialNumber: string | null;
-  connectionState: string | null;
+  connectionState: ConnectionState | null;
   rssi: number;
   currentRssi: number;
   currentBattery: number;
@@ -360,7 +372,7 @@ export interface SenseStructure extends HubStructure {}
  * Dynamic measurement data based on device type
  */
 export interface DeviceMeasurementData {
-  connectionState?: string;
+  connectionState?: ConnectionState;
   currentTemperature?: number | string;
   currentHumidity?: number | string;
   currentRssi?: number | string;
@@ -377,6 +389,14 @@ export interface DeviceMeasurementData {
   volumeTotal?: number | string;
   waterPressure?: number | string;
   [key: string]: string | number | boolean | undefined | null;
+}
+
+/*
+ * Connection state enum
+ */
+export enum ConnectionState {
+  CONNECTED = "connected",
+  DISCONNECTED = "disconnected",
 }
 
 /**
