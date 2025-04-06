@@ -1,22 +1,125 @@
 {
+  "id": "cubic-secure",
   "name": {
-    "en": "cubic-secure"
+    "en": "Cubic Secure",
+    "sv": "Cubic Secure"
   },
   "class": "watervalve",
   "capabilities": [
     "button",
     "measure_pressure",
-    "measure_temperature",
+    "measure_temperature.ambient",
+    "measure_temperature.water",
     "onoff",
     "alarm_water",
-    "measure_water",
-    "meter_water"
+    "meter_water.day",
+    "meter_water.total",
+    "measure_signal_strength"
   ],
+  "capabilitiesOptions": {
+    "measure_pressure": {
+      "decimals": 1,
+      "units": "bar"
+    },
+    "measure_temperature.ambient": {
+      "decimals": 1,
+      "title": {
+        "en": "Surrounding Temperature",
+        "sv": "Omgivande Temperatur"
+      }
+    },
+    "measure_temperature.water": {
+      "decimals": 1,
+      "title": {
+        "en": "Water Temperature",
+        "sv": "Vattentemperatur"
+      }
+    },
+    "meter_water.day": {
+      "decimals": 0,
+      "title": {
+        "en": "Daily Water Consumption",
+        "sv": "Daglig Vattenförbrukning"
+      }
+    },
+    "meter_water.total": {
+      "decimals": 0,
+      "title": {
+        "en": "Total Water Consumption",
+        "sv": "Total Vattenförbrukning"
+      }
+    },
+    "measure_signal_strength": {
+      "decimals": 0
+    }
+  },
   "platforms": ["local"],
   "connectivity": ["cloud"],
   "images": {
     "small": "{{driverAssetsPath}}/images/small.png",
     "large": "{{driverAssetsPath}}/images/large.png",
     "xlarge": "{{driverAssetsPath}}/images/xlarge.png"
-  }
+  },
+  "pair": [
+    {
+      "id": "login_credentials",
+      "template": "login_credentials",
+      "options": {
+        "logo": "../../../assets/logo.svg",
+        "title": {
+          "en": "Login to LK Systems",
+          "sv": "Logga in på LK Systems"
+        },
+        "usernameLabel": {
+          "en": "E-mail address",
+          "sv": "E-postadress"
+        },
+        "usernamePlaceholder": {
+          "en": "email@example.com",
+          "sv": "email@example.com"
+        },
+        "passwordLabel": {
+          "en": "Password",
+          "sv": "Lösenord"
+        },
+        "passwordPlaceholder": {
+          "en": "Password",
+          "sv": "Lösenord"
+        }
+      }
+    },
+    {
+      "id": "list_devices",
+      "template": "list_devices",
+      "options": {
+        "title": {
+          "en": "Select your home",
+          "sv": "Välj ditt hem"
+        },
+        "singular": true
+      },
+      "navigation": {
+        "next": "list_devices2"
+      }
+    },
+    {
+      "id": "list_devices2",
+      "template": "list_devices",
+      "options": {
+        "title": {
+          "en": "Select Cubic Secure devices",
+          "sv": "Välj Cubic Secure enheter"
+        },
+        "singular": false
+      },
+      "navigation": {
+        "prev": "list_devices",
+        "next": "add_devices"
+      }
+    },
+    {
+      "id": "add_devices",
+      "template": "add_devices"
+    }
+  ]
 }

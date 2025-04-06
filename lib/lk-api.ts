@@ -523,7 +523,7 @@ export class LkApi extends SimpleClass {
     serialNumber: string
   ): Promise<CubicSecureMeasurement> {
     return this.makeAuthorizedRequest<CubicSecureMeasurement>(
-      `/cubic/secure/${encodeURIComponent(serialNumber)}/measurement/false`,
+      `/cubic/secure/${encodeURIComponent(serialNumber)}/measurement/true`,
       "GET"
     );
   }
@@ -565,7 +565,7 @@ export class LkApi extends SimpleClass {
     serialNumber: string
   ): Promise<CubicDetectorMeasurement> {
     return this.makeAuthorizedRequest<CubicDetectorMeasurement>(
-      `/cubic/detector/${encodeURIComponent(serialNumber)}/measurement/false`,
+      `/cubic/detector/${encodeURIComponent(serialNumber)}/measurement/true`,
       "GET"
     );
   }

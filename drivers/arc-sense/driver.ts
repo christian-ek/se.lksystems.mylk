@@ -112,6 +112,7 @@ class ArcSenseDriver extends Driver {
           address: estate.address,
           city: estate.city,
         },
+        icon: "../../../assets/house.svg",
       }));
 
       return devices;

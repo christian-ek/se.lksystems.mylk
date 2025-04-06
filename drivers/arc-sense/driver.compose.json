@@ -65,9 +65,6 @@
           "en": "Password",
           "sv": "Lösenord"
         }
-      },
-      "navigation": {
-        "next": "list_devices"
       }
     },
     {

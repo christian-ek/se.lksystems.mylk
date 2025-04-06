@@ -19,6 +19,7 @@ export interface RealEstateSelection {
     address?: string | null;
     city?: string | null;
   };
+  icon: string;
 }
 
 /**
