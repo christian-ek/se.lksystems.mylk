@@ -177,23 +177,8 @@ class CubicDetectorDevice extends Device {
 
       // Battery
       if (measurement.currentBattery != null) {
-        // Convert battery from mV to percentage if needed
-        // The API seems to return values around 2900-3000 mV
-        // We'll convert this to a percentage between 0-100%
-        // Assuming 2500 mV is 0% and 3100 mV is 100%
-        const minVoltage = 2500;
-        const maxVoltage = 3100;
-        const batteryVoltage = measurement.currentBattery;
-
-        let batteryPercentage = Math.round(
-          ((batteryVoltage - minVoltage) / (maxVoltage - minVoltage)) * 100
-        );
-
-        // Clamp the battery percentage between 0 and 100
-        batteryPercentage = Math.max(0, Math.min(100, batteryPercentage));
-
         promises.push(
-          updateCapability(this, "measure_battery", batteryPercentage)
+          updateCapability(this, "measure_battery", measurement.currentBattery)
         );
       }
 
