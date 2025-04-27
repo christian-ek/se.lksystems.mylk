@@ -24,7 +24,7 @@ class ArcSenseDevice extends Device {
   private api!: LkApi;
   private deviceData!: DeviceData;
   private updateTimeout!: NodeJS.Timeout;
-  private pauseUpdates = false;
+  private pauseUntil = 0;
 
   // Override log method to include device identifier
   log(...args: unknown[]) {
@@ -98,8 +98,14 @@ class ArcSenseDevice extends Device {
       clearTimeout(this.updateTimeout);
     }
 
-    if (this.pauseUpdates) {
-      this.log("Updates paused, skipping data fetch");
+    // Check if updates are paused
+    const now = Date.now();
+    if (now < this.pauseUntil) {
+      const remainingPauseTime = Math.ceil((this.pauseUntil - now) / 1000);
+      this.log(
+        `Updates paused for another ${remainingPauseTime} seconds, skipping data fetch`
+      );
+
       this.updateTimeout = scheduleUpdate(
         this,
         this.homey,
@@ -183,7 +189,8 @@ class ArcSenseDevice extends Device {
       );
 
       // Target Temperature (only if not paused)
-      if (!this.pauseUpdates) {
+      const now = Date.now();
+      if (now >= this.pauseUntil) {
         promises.push(
           updateCapability(
             this,
@@ -237,15 +244,8 @@ class ArcSenseDevice extends Device {
     }
   }
 
-  // No need for reinitializeApi method since we're not using it anymore
-
   async onCapabilityTargetTemperature(value: number): Promise<void> {
     this.log(`Setting temperature to ${value}°C`);
-
-    if (this.pauseUpdates) {
-      this.log("Ignoring temperature change - updates paused");
-      return;
-    }
 
     if (!this.api) {
       this.error("API client not initialized");
@@ -256,9 +256,15 @@ class ArcSenseDevice extends Device {
       // Convert to API temperature format (multiply by 10)
       const apiTemp = convertToApiTemperature(value);
 
-      // Pause updates to prevent conflicts
-      this.pauseUpdates = true;
-      this.log(`Pausing updates while setting temperature to ${value}°C`);
+      // Pause updates for 30 seconds from now
+      const pauseDuration = 30000; // 30 seconds in milliseconds
+      const now = Date.now();
+      this.pauseUntil = now + pauseDuration;
+      this.log(
+        `Pausing updates for ${
+          pauseDuration / 1000
+        } seconds while setting temperature to ${value}°C`
+      );
 
       const success = await this.api.updateArcSenseTemperature(
         this.deviceData.id,
@@ -267,27 +273,18 @@ class ArcSenseDevice extends Device {
 
       if (!success) {
         this.error(`Failed to set temperature to ${value}°C`);
-        this.pauseUpdates = false;
+        this.pauseUntil = 0; // Reset pause if failed
         throw new Error("Failed to set target temperature");
       }
 
-      this.log(`Temperature set to ${value}°C (${apiTemp})`);
-
-      // Resume updates after delay
-      const resumeDelay = 30000; // 30 seconds
-      this.log(`Updates will resume in ${resumeDelay / 1000} seconds`);
-
-      setTimeout(() => {
-        if (this.pauseUpdates) {
-          this.pauseUpdates = false;
-          this.log("Device updates resumed");
-          this.fetchDeviceData();
-        }
-      }, resumeDelay);
+      this.log(
+        `Temperature set to ${value}°C (${apiTemp}). Updates will resume automatically in ${
+          pauseDuration / 1000
+        } seconds.`
+      );
     } catch (error) {
       this.error(`Temperature setting error: ${formatError(error)}`);
-      this.pauseUpdates = false;
-      this.log("Resuming updates due to error");
+      this.pauseUntil = 0; // Reset pause if error
       throw new Error(`Temperature setting error: ${formatError(error)}`);
     }
   }

@@ -2,7 +2,7 @@ import type { Device } from "homey";
 import type Homey from "homey/lib/Homey";
 
 /**
- * Updates a device capability with proper error handling
+ * Updates a device capability with proper error handling and type conversion
  * @param device The Homey device instance
  * @param capId Capability ID to update
  * @param newValue New value from the API (should already be transformed to the correct format)
@@ -11,23 +11,31 @@ import type Homey from "homey/lib/Homey";
 export const updateCapability = (
   device: Device,
   capId: string,
-  newValue: number | null | undefined
+  newValue: number | boolean | null | undefined
 ): Promise<void> | undefined => {
   if (!device.hasCapability(capId)) return;
 
   if (newValue === null || newValue === undefined) return;
 
-  if (
-    typeof newValue === "number" &&
-    device.getCapabilityValue(capId) !== newValue
-  ) {
-    device.log(`Updating ${capId} to ${newValue}`);
-    return device.setCapabilityValue(capId, newValue).catch((err) => {
+  // Get current value for comparison and type detection
+  const currentValue = device.getCapabilityValue(capId);
+  let valueToSet: number | boolean = newValue;
+
+  // Handle type conversion based on the capability's expected type
+  if (typeof currentValue === "boolean") {
+    // Convert to boolean if the current capability stores a boolean
+    valueToSet = typeof newValue === "number" ? Boolean(newValue) : newValue;
+  } else if (typeof currentValue === "number" && typeof newValue !== "number") {
+    // Convert to number if the current capability stores a number
+    valueToSet = Number(newValue);
+  }
+
+  // Only update if the value has changed
+  if (device.getCapabilityValue(capId) !== valueToSet) {
+    device.log(`Updating ${capId} to ${valueToSet}`);
+    return device.setCapabilityValue(capId, valueToSet).catch((err) => {
       device.error(`Failed to set capability ${capId}: ${err.message}`);
     });
-  }
-  if (typeof newValue !== "number") {
-    device.error(`Invalid value type for ${capId}: ${typeof newValue}`);
   }
 
   return Promise.resolve();

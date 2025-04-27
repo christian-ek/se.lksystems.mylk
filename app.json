@@ -73,8 +73,8 @@
         "target_temperature": {
           "decimals": 1,
           "step": 0.5,
-          "min": 5,
-          "max": 30
+          "min": 7,
+          "max": 27
         },
         "measure_temperature": {
           "decimals": 1
@@ -97,8 +97,7 @@
       ],
       "images": {
         "small": "/drivers/arc-sense/assets/images/small.png",
-        "large": "/drivers/arc-sense/assets/images/large.png",
-        "xlarge": "/drivers/arc-sense/assets/images/xlarge.png"
+        "large": "/drivers/arc-sense/assets/images/large.png"
       },
       "pair": [
         {
@@ -228,8 +227,7 @@
       ],
       "images": {
         "small": "/drivers/cubic-detector/assets/images/small.png",
-        "large": "/drivers/cubic-detector/assets/images/large.png",
-        "xlarge": "/drivers/cubic-detector/assets/images/xlarge.png"
+        "large": "/drivers/cubic-detector/assets/images/large.png"
       },
       "pair": [
         {
@@ -331,7 +329,6 @@
       },
       "class": "watervalve",
       "capabilities": [
-        "button",
         "measure_pressure",
         "measure_temperature.ambient",
         "measure_temperature.water",
@@ -386,8 +383,7 @@
       ],
       "images": {
         "small": "/drivers/cubic-secure/assets/images/small.png",
-        "large": "/drivers/cubic-secure/assets/images/large.png",
-        "xlarge": "/drivers/cubic-secure/assets/images/xlarge.png"
+        "large": "/drivers/cubic-secure/assets/images/large.png"
       },
       "pair": [
         {

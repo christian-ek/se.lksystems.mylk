@@ -154,10 +154,10 @@ class CubicDetectorDevice extends Device {
     try {
       const promises: Array<Promise<void> | undefined> = [];
 
-      // Update water leak alarm
+      // Update water leak alarm - pass boolean directly instead of 0/1
       const leakState = measurement.leak?.leakState;
       const hasLeak = leakState !== null && leakState !== LeakState.NO_LEAK;
-      promises.push(updateCapability(this, "alarm_water", hasLeak ? 1 : 0));
+      promises.push(updateCapability(this, "alarm_water", hasLeak));
 
       // Temperature
       promises.push(
@@ -170,7 +170,7 @@ class CubicDetectorDevice extends Device {
           updateCapability(
             this,
             "measure_humidity",
-            measurement.currentHumidity
+            measurement.currentHumidity / 10
           )
         );
       }

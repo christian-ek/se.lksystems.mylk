@@ -6,7 +6,6 @@
   },
   "class": "watervalve",
   "capabilities": [
-    "button",
     "measure_pressure",
     "measure_temperature.ambient",
     "measure_temperature.water",

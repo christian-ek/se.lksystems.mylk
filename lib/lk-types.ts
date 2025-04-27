@@ -417,9 +417,8 @@ export enum HubMode {
 }
 
 /**
- * Temperature update request payload for setting
- * the desired temperature on an Arc Sense device
+ * Temperature data structure for Arc Sense devices
  */
-export interface TemperatureUpdateRequest {
-  desiredTemperature: number; // Target temperature in API format (e.g., 230 = 23.0°C)
+export interface SenseTemperatureDTO {
+  temperature: number; // Target temperature in API format (e.g., 230 = 23.0°C)
 }

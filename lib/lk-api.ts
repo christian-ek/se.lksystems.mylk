@@ -6,6 +6,7 @@ import type {
   AxiosError,
   RawAxiosRequestHeaders,
   AxiosResponse,
+  Method,
 } from "axios";
 import type {
   LoginRequest,
@@ -26,33 +27,43 @@ import type {
   RealEstateStructure,
   DeviceMeasurement,
   HubStructure,
+  SenseTemperatureDTO,
 } from "./lk-types";
-import { type ValveState, HubMode } from "./lk-types";
+import { ValveState } from "./lk-types";
+
+export const HttpMethod: Record<string, Method> = {
+  GET: "GET",
+  POST: "POST",
+  PUT: "PUT",
+  DELETE: "DELETE",
+  PATCH: "PATCH",
+};
 
 export class LkApi extends SimpleClass {
   private readonly SUBSCRIPTION_KEY: string =
     "deb63224fa0443d5a8e9167e88b4b4d9";
-  private readonly authBaseUrl: string;
-  private readonly serviceBaseUrl: string;
+  private readonly apiHost: string;
   private email: string;
   private password: string;
   private accessToken: string | null | undefined;
   private refreshToken: string | null | undefined;
   private homey: Homey;
+  public debug = true;
 
   constructor(
     email: string,
     password: string,
     homey: Homey,
-    apiHost = "https://link2.lk.nu"
+    apiHost = "https://lk-home-assistant-dev.azure-api.net"
   ) {
     super();
 
     this.homey = homey;
     this.email = email;
     this.password = password;
-    this.authBaseUrl = `${apiHost}/auth`;
-    this.serviceBaseUrl = `${apiHost}/service`;
+    this.apiHost = apiHost;
+
+    this.log("Initializing with email:", email, "host:", apiHost);
 
     if (!email || !password) {
       this.error("Email and/or password not provided to LkApi constructor.");
@@ -60,7 +71,7 @@ export class LkApi extends SimpleClass {
     }
 
     this.loadTokens();
-    this.log(`LkApi initialized for host: ${apiHost}`);
+    this.log("Initialized for host:", apiHost);
 
     axios.defaults.headers.common = {
       "Content-Type": "application/json",
@@ -69,6 +80,28 @@ export class LkApi extends SimpleClass {
     };
 
     this.setupAxiosInterceptor();
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: logs
+  log(...args: any[]): void {
+    // Format date for console log
+    const date = new Date();
+    const formattedDate = `${date.toISOString().split("T")[0]} ${
+      date.toTimeString().split(" ")[0]
+    }`;
+
+    console.log(formattedDate, "[log]", "[LkApi]", ...args);
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: logs
+  error(...args: any[]): void {
+    // Format date for console log
+    const date = new Date();
+    const formattedDate = `${date.toISOString().split("T")[0]} ${
+      date.toTimeString().split(" ")[0]
+    }`;
+
+    console.error(formattedDate, "[error]", "[LkApi]", ...args);
   }
 
   private loadTokens(): void {
@@ -97,10 +130,18 @@ export class LkApi extends SimpleClass {
     this.homey.settings.set("lkRefreshToken", refresh);
     this.accessToken = access;
     this.refreshToken = refresh;
-    if (access) this.log("Saved new access token.");
-    else this.log("Cleared access token.");
-    if (refresh) this.log("Saved new refresh token.");
-    else this.log("Cleared refresh token.");
+
+    if (access) {
+      this.log("Saved new access token.");
+    } else {
+      this.log("Cleared access token.");
+    }
+
+    if (refresh) {
+      this.log("Saved new refresh token.");
+    } else {
+      this.log("Cleared refresh token.");
+    }
   }
 
   private clearTokens(): void {
@@ -213,7 +254,7 @@ export class LkApi extends SimpleClass {
 
     try {
       const response = await axios.post<LoginResponse>(
-        `${this.authBaseUrl}/auth/login`,
+        `${this.apiHost}/auth/auth/login`,
         data,
         { headers: requestHeaders }
       );
@@ -228,13 +269,12 @@ export class LkApi extends SimpleClass {
       );
       return response.data;
     } catch (error) {
-      this.error(
-        `Login failed: ${
-          error instanceof Error
-            ? error.message
-            : this.formatAxiosError(error as AxiosError)
-        }`
-      );
+      const errorMsg = `Login failed: ${
+        error instanceof Error
+          ? error.message
+          : this.formatAxiosError(error as AxiosError)
+      }`;
+      this.error(errorMsg);
       this.clearTokens();
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         throw new Error("Invalid email or password.");
@@ -260,7 +300,7 @@ export class LkApi extends SimpleClass {
 
     try {
       const response = await axios.post<LoginResponse>(
-        `${this.authBaseUrl}/auth/refresh`,
+        `${this.apiHost}/auth/auth/refresh`,
         data,
         { headers: requestHeaders }
       );
@@ -277,26 +317,24 @@ export class LkApi extends SimpleClass {
       );
       return response.data;
     } catch (error) {
-      this.error(
-        `Token refresh failed: ${
-          error instanceof Error
-            ? error.message
-            : this.formatAxiosError(error as AxiosError)
-        }`
-      );
+      const errorMsg = `Token refresh failed: ${
+        error instanceof Error
+          ? error.message
+          : this.formatAxiosError(error as AxiosError)
+      }`;
+      this.error(errorMsg);
       throw error;
     }
   }
 
   private async makeAuthorizedRequest<T>(
-    endpoint: string,
-    method = "GET",
-    data?: unknown,
-    urlType: "service" | "auth" = "service"
+    fullPath: string,
+    method: Method = HttpMethod.GET,
+    data?: unknown
   ): Promise<T> {
     if (!this.accessToken) {
       this.log(
-        `No access token found before ${method} ${endpoint}. Attempting login.`
+        `No access token found before ${method} ${fullPath}. Attempting login.`
       );
       try {
         await this.login();
@@ -305,21 +343,17 @@ export class LkApi extends SimpleClass {
         }
         this.log("Login successful, proceeding with original request.");
       } catch (loginError) {
-        this.error(
-          `Login attempt failed during authorized request: ${
-            loginError instanceof Error
-              ? loginError.message
-              : String(loginError)
-          }`
-        );
+        const errorMsg = `Login attempt failed during authorized request: ${
+          loginError instanceof Error ? loginError.message : String(loginError)
+        }`;
+        this.error(errorMsg);
         throw new Error(
-          `Authentication required for ${method} ${endpoint}, but login failed.`
+          `Authentication required for ${method} ${fullPath}, but login failed.`
         );
       }
     }
 
-    const baseUrl = urlType === "auth" ? this.authBaseUrl : this.serviceBaseUrl;
-    const fullUrl = `${baseUrl}${endpoint}`;
+    const fullUrl = `${this.apiHost}${fullPath}`;
 
     const config: AxiosRequestConfig = {
       method,
@@ -339,42 +373,63 @@ export class LkApi extends SimpleClass {
 
     this.log(`Making authorized ${method} request to: ${fullUrl}`);
 
+    // Debug log for request
+    if (this.debug) {
+      const requestHeaders = { ...config.headers };
+      if ("Authorization" in requestHeaders) {
+        requestHeaders.Authorization = "Bearer ****";
+      }
+
+      this.log("DEBUG:", `REQUEST ${method} ${fullUrl}`);
+      this.log("DEBUG:", `Headers: ${JSON.stringify(requestHeaders)}`);
+      if (data) {
+        this.log("DEBUG:", `Body: ${JSON.stringify(data)}`);
+      }
+    }
+
     try {
       const response: AxiosResponse<T> = await axios(config);
+
+      // Debug log for response
+      if (this.debug) {
+        this.log("DEBUG:", `RESPONSE ${method} ${fullUrl}`);
+        this.log("DEBUG:", `Status: ${response.status}`);
+        this.log("DEBUG:", `Data: ${JSON.stringify(response.data)}`);
+      }
+
       return response.data;
     } catch (error) {
-      this.error(
-        `Error during ${method} ${fullUrl}: ${
-          error instanceof Error
-            ? error.message
-            : this.formatAxiosError(error as AxiosError)
-        }`
-      );
+      const errorMsg = `Error during ${method} ${fullUrl}: ${
+        error instanceof Error
+          ? error.message
+          : this.formatAxiosError(error as AxiosError)
+      }`;
+
+      this.error(errorMsg);
       throw error;
     }
   }
 
-  // API Methods
   async getUserInfo(): Promise<UserInfo> {
     return this.makeAuthorizedRequest<UserInfo>(
-      "/auth/user",
-      "GET",
-      undefined,
-      "auth"
+      "/auth/auth/user",
+      HttpMethod.GET
     );
   }
 
   async getUserStructure(userId: string): Promise<RealEstateStructure[]> {
     return this.makeAuthorizedRequest<RealEstateStructure[]>(
-      `/users/user/${encodeURIComponent(userId)}/structure/false`,
-      "GET"
+      `/service/users/user/${encodeURIComponent(userId)}/structure/false`,
+      HttpMethod.GET
     );
   }
 
   async getRealEstateTitle(realestateId: string): Promise<RealEstate> {
     return this.makeAuthorizedRequest<RealEstate>(
-      `/structure/realestate/${encodeURIComponent(realestateId)}/title/false`,
-      "GET"
+      `/service/structure/realestate/${encodeURIComponent(
+        realestateId
+      )}/title/false`,
+      HttpMethod.GET
     );
   }
 
@@ -382,140 +437,67 @@ export class LkApi extends SimpleClass {
     realestateId: string
   ): Promise<DeviceMeasurement[]> {
     return this.makeAuthorizedRequest<DeviceMeasurement[]>(
-      `/structure/realestate/${encodeURIComponent(
+      `/service/structure/realestate/${encodeURIComponent(
         realestateId
       )}/measurements/false`,
-      "GET"
+      HttpMethod.GET
     );
   }
 
   async getRealEstateMachines(realestateId: string): Promise<DeviceTitle[]> {
     return this.makeAuthorizedRequest<DeviceTitle[]>(
-      `/structure/realestate/${encodeURIComponent(
+      `/service/structure/realestate/${encodeURIComponent(
         realestateId
       )}/realestateMachines/false`,
-      "GET"
+      HttpMethod.GET
     );
   }
 
   async getArcHubConfiguration(serialNumber: string): Promise<ArcHubConfig> {
     return this.makeAuthorizedRequest<ArcHubConfig>(
-      `/arc/hub/${encodeURIComponent(serialNumber)}/configuration/false`,
-      "GET"
+      `/service/arc/hub/${encodeURIComponent(
+        serialNumber
+      )}/configuration/false`,
+      HttpMethod.GET
     );
   }
 
   async getArcHubMeasurement(serialNumber: string): Promise<ArcHubMeasurement> {
     return this.makeAuthorizedRequest<ArcHubMeasurement>(
-      `/arc/hub/${encodeURIComponent(serialNumber)}/measurement/false`,
-      "GET"
+      `/service/arc/hub/${encodeURIComponent(serialNumber)}/measurement/false`,
+      HttpMethod.GET
     );
   }
 
   async getArcHubStructure(serialNumber: string): Promise<HubStructure> {
     return this.makeAuthorizedRequest<HubStructure>(
-      `/arc/hub/${encodeURIComponent(serialNumber)}/structure/false`,
-      "GET"
+      `/service/arc/hub/${encodeURIComponent(serialNumber)}/structure/false`,
+      HttpMethod.GET
     );
-  }
-
-  async updateArcHubMode(
-    serialNumber: string,
-    mode: HubMode
-  ): Promise<boolean> {
-    try {
-      await this.makeAuthorizedRequest(
-        `/arc/hub/${encodeURIComponent(serialNumber)}/mode/false`,
-        "PUT",
-        { mode }
-      );
-      this.log(
-        `Successfully updated ArcHub mode for ${serialNumber} to ${HubMode[mode]}`
-      );
-      return true;
-    } catch (error) {
-      this.error(
-        `Failed to update ArcHub mode for ${serialNumber}: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-      return false;
-    }
-  }
-
-  async updateArcHubLeds(
-    serialNumber: string,
-    ledsEnabled: boolean
-  ): Promise<boolean> {
-    try {
-      await this.makeAuthorizedRequest(
-        `/arc/hub/${encodeURIComponent(serialNumber)}/leds/false`,
-        "PUT",
-        { ledsEnabled }
-      );
-      this.log(
-        `Successfully updated ArcHub LEDs for ${serialNumber} to ${
-          ledsEnabled ? "enabled" : "disabled"
-        }`
-      );
-      return true;
-    } catch (error) {
-      this.error(
-        `Failed to update ArcHub LEDs for ${serialNumber}: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-      return false;
-    }
   }
 
   async getArcSenseConfiguration(mac: string): Promise<ArcSenseConfig> {
     return this.makeAuthorizedRequest<ArcSenseConfig>(
-      `/arc/sense/${encodeURIComponent(mac)}/configuration/false`,
-      "GET"
+      `/service/arc/sense/${encodeURIComponent(mac)}/configuration/false`,
+      HttpMethod.GET
     );
   }
 
   async getArcSenseMeasurement(mac: string): Promise<ArcSenseMeasurement> {
     return this.makeAuthorizedRequest<ArcSenseMeasurement>(
-      `/arc/sense/${encodeURIComponent(mac)}/measurement/true`,
-      "GET"
+      `/service/arc/sense/${encodeURIComponent(mac)}/measurement/true`,
+      HttpMethod.GET
     );
-  }
-
-  async updateArcSenseTemperature(
-    mac: string,
-    desiredTemperature: number
-  ): Promise<boolean> {
-    try {
-      const data = { desiredTemperature };
-      await this.makeAuthorizedRequest(
-        `/arc/sense/${encodeURIComponent(mac)}/setpoint/false`,
-        "PUT",
-        data
-      );
-      this.log(
-        `Successfully set target temperature to ${
-          desiredTemperature / 10
-        }°C for ArcSense ${mac}`
-      );
-      return true;
-    } catch (error) {
-      this.error(
-        `Failed to update ArcSense temperature for ${mac}: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-      return false;
-    }
   }
 
   async getCubicSecureConfiguration(
     serialNumber: string
   ): Promise<CubicSecureConfig> {
     return this.makeAuthorizedRequest<CubicSecureConfig>(
-      `/cubic/secure/${encodeURIComponent(serialNumber)}/configuration/false`,
-      "GET"
+      `/service/cubic/secure/${encodeURIComponent(
+        serialNumber
+      )}/configuration/true`,
+      HttpMethod.GET
     );
   }
 
@@ -523,41 +505,21 @@ export class LkApi extends SimpleClass {
     serialNumber: string
   ): Promise<CubicSecureMeasurement> {
     return this.makeAuthorizedRequest<CubicSecureMeasurement>(
-      `/cubic/secure/${encodeURIComponent(serialNumber)}/measurement/true`,
-      "GET"
+      `/service/cubic/secure/${encodeURIComponent(
+        serialNumber
+      )}/measurement/true`,
+      HttpMethod.GET
     );
-  }
-
-  async updateCubicSecureValveState(
-    serialNumber: string,
-    valveState: ValveState
-  ): Promise<boolean> {
-    try {
-      await this.makeAuthorizedRequest(
-        `/cubic/secure/${encodeURIComponent(serialNumber)}/valve/false`,
-        "PUT",
-        { valveState }
-      );
-      this.log(
-        `Successfully updated CubicSecure valve state for ${serialNumber} to ${valveState}`
-      );
-      return true;
-    } catch (error) {
-      this.error(
-        `Failed to update CubicSecure valve state for ${serialNumber}: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-      return false;
-    }
   }
 
   async getCubicDetectorConfiguration(
     serialNumber: string
   ): Promise<CubicDetectorConfig> {
     return this.makeAuthorizedRequest<CubicDetectorConfig>(
-      `/cubic/detector/${encodeURIComponent(serialNumber)}/configuration/false`,
-      "GET"
+      `/service/cubic/detector/${encodeURIComponent(
+        serialNumber
+      )}/configuration/false`,
+      HttpMethod.GET
     );
   }
 
@@ -565,8 +527,10 @@ export class LkApi extends SimpleClass {
     serialNumber: string
   ): Promise<CubicDetectorMeasurement> {
     return this.makeAuthorizedRequest<CubicDetectorMeasurement>(
-      `/cubic/detector/${encodeURIComponent(serialNumber)}/measurement/true`,
-      "GET"
+      `/service/cubic/detector/${encodeURIComponent(
+        serialNumber
+      )}/measurement/true`,
+      HttpMethod.GET
     );
   }
 
@@ -574,15 +538,19 @@ export class LkApi extends SimpleClass {
     deviceIdentity: string
   ): Promise<DeviceInformation> {
     return this.makeAuthorizedRequest<DeviceInformation>(
-      `/devices/device/${encodeURIComponent(deviceIdentity)}/information/false`,
-      "GET"
+      `/service/devices/device/${encodeURIComponent(
+        deviceIdentity
+      )}/information/false`,
+      HttpMethod.GET
     );
   }
 
   async getDeviceTitle(deviceIdentity: string): Promise<DeviceTitle> {
     return this.makeAuthorizedRequest<DeviceTitle>(
-      `/devices/device/${encodeURIComponent(deviceIdentity)}/title/false`,
-      "GET"
+      `/service/devices/device/${encodeURIComponent(
+        deviceIdentity
+      )}/title/false`,
+      HttpMethod.GET
     );
   }
 
@@ -599,13 +567,62 @@ export class LkApi extends SimpleClass {
       );
       return true;
     } catch (error) {
-      this.error(
-        `Token validation check failed: ${
-          error instanceof Error
-            ? error.message
-            : this.formatAxiosError(error as AxiosError)
-        }`
+      const errorMsg = `Token validation check failed: ${
+        error instanceof Error
+          ? error.message
+          : this.formatAxiosError(error as AxiosError)
+      }`;
+      this.error(errorMsg);
+      return false;
+    }
+  }
+
+  async updateArcSenseTemperature(
+    mac: string,
+    temperature: number
+  ): Promise<boolean> {
+    try {
+      const data: SenseTemperatureDTO = { temperature };
+      await this.makeAuthorizedRequest<SenseTemperatureDTO>(
+        `/control/arc/sense/${encodeURIComponent(mac)}/temperature`,
+        HttpMethod.POST,
+        data
       );
+
+      this.log(`Temperature for ${mac} updated to ${temperature}`);
+      return true;
+    } catch (error) {
+      const errorMsg = `Failed to update temperature for ${mac}: ${this.formatAxiosError(
+        error as AxiosError
+      )}`;
+      this.error(errorMsg);
+      return false;
+    }
+  }
+
+  async updateCubicSecureValveState(
+    serialNumber: string,
+    state: ValveState
+  ): Promise<boolean> {
+    try {
+      const endpoint =
+        state === ValveState.OPEN
+          ? `/control/cubic/secure/${encodeURIComponent(
+              serialNumber
+            )}/valve/open`
+          : `/control/cubic/secure/${encodeURIComponent(
+              serialNumber
+            )}/valve/close`;
+
+      await this.makeAuthorizedRequest(endpoint, HttpMethod.POST);
+
+      this.log(`Valve for ${serialNumber} set to ${state}`);
+      return true;
+    } catch (error) {
+      const errorMsg = `Failed to update valve state for ${serialNumber}: ${this.formatAxiosError(
+        error as AxiosError
+      )}`;
+      this.error(errorMsg);
       return false;
     }
   }

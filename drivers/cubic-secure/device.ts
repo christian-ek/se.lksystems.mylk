@@ -27,7 +27,7 @@ class CubicSecureDevice extends Device {
   private api!: LkApi;
   private deviceData!: DeviceData;
   private updateTimeout!: NodeJS.Timeout;
-  private pauseUpdates = false;
+  private pauseUntil = 0;
 
   // Override log method to include device identifier
   log(...args: unknown[]) {
@@ -86,10 +86,6 @@ class CubicSecureDevice extends Device {
         "onoff",
         this.onCapabilityOnOff.bind(this)
       );
-      this.registerCapabilityListener(
-        "button",
-        this.onCapabilityButton.bind(this)
-      );
 
       // Ensure the device has all required capabilities
       if (
@@ -137,8 +133,14 @@ class CubicSecureDevice extends Device {
       clearTimeout(this.updateTimeout);
     }
 
-    if (this.pauseUpdates) {
-      this.log("Updates paused, skipping data fetch");
+    // Check if updates are paused
+    const now = Date.now();
+    if (now < this.pauseUntil) {
+      const remainingPauseTime = Math.ceil((this.pauseUntil - now) / 1000);
+      this.log(
+        `Updates paused for another ${remainingPauseTime} seconds, skipping data fetch`
+      );
+
       this.updateTimeout = scheduleUpdate(
         this,
         this.homey,
@@ -221,12 +223,23 @@ class CubicSecureDevice extends Device {
       // Update water leak alarm
       const leakState = measurement.leak?.leakState;
       const hasLeak = leakState !== null && leakState !== LeakState.NO_LEAK;
-      promises.push(updateCapability(this, "alarm_water", hasLeak ? 1 : 0));
+      promises.push(updateCapability(this, "alarm_water", hasLeak));
 
-      // Update on/off based on valve state
-      if (configuration?.valveState) {
+      // Update on/off based on valve state - pass boolean directly instead of 0/1
+      // Only update if not in pause state
+      const now = Date.now();
+      if (configuration?.valveState && now >= this.pauseUntil) {
         const isOpen = configuration.valveState === ValveState.OPEN;
-        promises.push(updateCapability(this, "onoff", isOpen ? 1 : 0));
+        promises.push(updateCapability(this, "onoff", isOpen));
+      } else if (configuration?.valveState && this.hasCapability("onoff")) {
+        const isOpen = configuration.valveState === ValveState.OPEN;
+        if (this.getCapabilityValue("onoff") !== isOpen) {
+          this.log(
+            `Skipping onoff update to ${
+              isOpen ? "open" : "closed"
+            } (updates paused)`
+          );
+        }
       }
 
       // Surrounding/Ambient temperature
@@ -289,21 +302,20 @@ class CubicSecureDevice extends Device {
   async onCapabilityOnOff(value: boolean): Promise<void> {
     this.log(`Setting valve to ${value ? "open" : "closed"}`);
 
-    if (this.pauseUpdates) {
-      this.log("Ignoring valve state change - updates paused");
-      return;
-    }
-
     if (!this.api) {
       this.error("API client not initialized");
       throw new Error("API not initialized");
     }
 
     try {
-      // Pause updates to prevent conflicts
-      this.pauseUpdates = true;
+      // Pause updates for 30 seconds from now
+      const pauseDuration = 30000; // 30 seconds in milliseconds
+      const now = Date.now();
+      this.pauseUntil = now + pauseDuration;
       this.log(
-        `Pausing updates while setting valve to ${value ? "open" : "closed"}`
+        `Pausing updates for ${
+          pauseDuration / 1000
+        } seconds while setting valve to ${value ? "open" : "closed"}`
       );
 
       const valveState = value ? ValveState.OPEN : ValveState.CLOSED;
@@ -314,41 +326,22 @@ class CubicSecureDevice extends Device {
 
       if (!success) {
         this.error(`Failed to set valve to ${value ? "open" : "closed"}`);
-        this.pauseUpdates = false;
+        this.pauseUntil = 0; // Reset pause if failed
         throw new Error("Failed to set valve state");
       }
 
-      this.log(`Valve set to ${value ? "open" : "closed"}`);
-
-      // Resume updates after delay
-      const resumeDelay = 30000; // 30 seconds
-      this.log(`Updates will resume in ${resumeDelay / 1000} seconds`);
-
-      setTimeout(() => {
-        if (this.pauseUpdates) {
-          this.pauseUpdates = false;
-          this.log("Device updates resumed");
-          this.fetchDeviceData();
-        }
-      }, resumeDelay);
+      this.log(
+        `Valve set to ${
+          value ? "open" : "closed"
+        }. Updates will resume automatically in ${
+          pauseDuration / 1000
+        } seconds.`
+      );
     } catch (error) {
       this.error(`Valve setting error: ${formatError(error)}`);
-      this.pauseUpdates = false;
-      this.log("Resuming updates due to error");
+      this.pauseUntil = 0; // Reset pause if error
       throw new Error(`Valve setting error: ${formatError(error)}`);
     }
-  }
-
-  async onCapabilityButton(): Promise<void> {
-    // This can be used to reset alarms or perform other button actions
-    this.log("Button pressed");
-
-    // For now, refresh the device data
-    await this.fetchDeviceData();
-
-    // Here you could add custom actions like resetting leak status
-    // For example, the button could be used to reset a leak alarm
-    // or perform a specific function
   }
 
   async onAdded() {
