@@ -83,6 +83,23 @@ class ArcSenseDevice extends Device {
         this.onCapabilityTargetTemperature.bind(this)
       );
 
+      // Check if device is wired and remove capabilities if needed
+      if (this.deviceData.wired) {
+        this.log(
+          `Device ${this.deviceData.id} is wired - removing battery and signal strength capabilities`
+        );
+
+        if (this.hasCapability("measure_battery")) {
+          await this.removeCapability("measure_battery").catch(this.error);
+        }
+
+        if (this.hasCapability("measure_signal_strength")) {
+          await this.removeCapability("measure_signal_strength").catch(
+            this.error
+          );
+        }
+      }
+
       await this.fetchDeviceData();
 
       await this.setAvailable().catch(this.error);
@@ -223,19 +240,23 @@ class ArcSenseDevice extends Device {
         )
       );
 
-      // Battery
-      promises.push(
-        updateCapability(this, "measure_battery", measurement.currentBattery)
-      );
+      // Battery - only if device has capability (not wired)
+      if (this.hasCapability("measure_battery")) {
+        promises.push(
+          updateCapability(this, "measure_battery", measurement.currentBattery)
+        );
+      }
 
-      // Signal Strength (RSSI)
-      promises.push(
-        updateCapability(
-          this,
-          "measure_signal_strength",
-          measurement.currentRssi
-        )
-      );
+      // Signal Strength - only if device has capability (not wired)
+      if (this.hasCapability("measure_signal_strength")) {
+        promises.push(
+          updateCapability(
+            this,
+            "measure_signal_strength",
+            measurement.currentRssi
+          )
+        );
+      }
 
       // Wait for all capability updates to complete
       await Promise.all(promises.filter((p) => p !== undefined));

@@ -161,8 +161,20 @@ class ArcSenseDriver extends Driver {
         const zoneName = device.zone?.zoneName || "Unknown Room";
         const deviceName = `Arc Sense - ${zoneName}`;
 
-        this.log(`Adding device: ${deviceName} (${device.identity})`);
+        // Get device configuration to check if it's wired
+        let wired = false;
+        try {
+          const config = await this.api.getArcSenseConfiguration(
+            device.identity
+          );
+          wired = !!config.wired;
+        } catch (configError) {
+          this.error(
+            `Failed to get config for ${device.identity}: ${configError}`
+          );
+        }
 
+        this.log(`Adding device: ${deviceName} (${device.identity})`);
         deviceItems.push({
           name: deviceName,
           data: {
@@ -171,6 +183,7 @@ class ArcSenseDriver extends Driver {
             externalId: device.externalId,
             realestateId: device.realestateId,
             realestateMachineId: device.realestateMachineId,
+            wired,
           },
           settings: {
             email: this.email,

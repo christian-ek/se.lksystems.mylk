@@ -31,6 +31,7 @@ export interface DeviceData {
   externalId?: string | null;
   realestateId?: string | null;
   realestateMachineId?: string | null;
+  wired?: boolean;
 }
 
 /**
