@@ -225,6 +225,24 @@ class CubicSecureDevice extends Device {
       const hasLeak = leakState !== null && leakState !== LeakState.NO_LEAK;
       promises.push(updateCapability(this, "alarm_water", hasLeak));
 
+      // Enable or disable the onoff capability based on leak state
+      if (hasLeak) {
+        // There's a leak - disable the onoff capability
+        this.log("Leak detected - disabling valve control");
+        promises.push(
+          this.setCapabilityOptions("onoff", { disabled: true }).catch(
+            this.error
+          )
+        );
+      } else {
+        // No leak - ensure the onoff capability is enabled
+        promises.push(
+          this.setCapabilityOptions("onoff", { disabled: false }).catch(
+            this.error
+          )
+        );
+      }
+
       // Update on/off based on valve state - pass boolean directly instead of 0/1
       // Only update if not in pause state
       const now = Date.now();
