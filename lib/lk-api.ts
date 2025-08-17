@@ -28,6 +28,7 @@ import type {
   DeviceMeasurement,
   HubStructure,
   SenseTemperatureDTO,
+  Notification,
 } from "./lk-types";
 import { ValveState } from "./lk-types";
 
@@ -625,6 +626,67 @@ export class LkApi extends SimpleClass {
       this.error(errorMsg);
       return false;
     }
+  }
+
+  /**
+   * Get current user messages/notifications
+   */
+  async getUserMessages(): Promise<Notification[]> {
+    return this.makeAuthorizedRequest<Notification[]>(
+      "/messaging/messages/user",
+      HttpMethod.GET
+    );
+  }
+
+  /**
+   * Get messages for a specific real estate
+   */
+  async getRealestateMessages(realestateId: string): Promise<Notification[]> {
+    return this.makeAuthorizedRequest<Notification[]>(
+      `/messaging/messages/realestate/${encodeURIComponent(realestateId)}`,
+      HttpMethod.GET
+    );
+  }
+
+  /**
+   * Get messages for a specific product
+   */
+  async getProductMessages(productId: string): Promise<Notification[]> {
+    return this.makeAuthorizedRequest<Notification[]>(
+      `/messaging/messages/product/${encodeURIComponent(productId)}`,
+      HttpMethod.GET
+    );
+  }
+
+  /**
+   * Get message data for a specific message ID
+   */
+  async getMessageData(messageId: number): Promise<unknown> {
+    return this.makeAuthorizedRequest<unknown>(
+      `/messaging/messages/${messageId}/data`,
+      HttpMethod.GET
+    );
+  }
+
+  /**
+   * Get read status for a specific message
+   */
+  async getMessageReadStatus(messageId: number): Promise<boolean> {
+    return this.makeAuthorizedRequest<boolean>(
+      `/messaging/messages/${messageId}/read`,
+      HttpMethod.GET
+    );
+  }
+
+  /**
+   * Mark a message as read
+   */
+  async markMessageAsRead(messageId: number): Promise<boolean> {
+    return this.makeAuthorizedRequest<boolean>(
+      `/messaging/messages/${messageId}/read`,
+      HttpMethod.POST,
+      messageId
+    );
   }
 
   private formatAxiosError(error: AxiosError): string {

@@ -422,3 +422,19 @@ export enum HubMode {
 export interface SenseTemperatureDTO {
   temperature: number; // Target temperature in API format (e.g., 230 = 23.0°C)
 }
+
+/**
+ * Notification/Message interface
+ */
+export interface Notification {
+  id: number;
+  messageType: string | null;
+  productGroup: string | null;
+  productType: string | null;
+  productId: string | null;
+  realestateMachineId: string | null;
+  translation: string | null;
+  dateCreated: string;
+  dateReported: string;
+  isRead: boolean;
+}
