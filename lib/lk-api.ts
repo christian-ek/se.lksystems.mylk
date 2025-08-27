@@ -55,7 +55,7 @@ export class LkApi extends SimpleClass {
     email: string,
     password: string,
     homey: Homey,
-    apiHost = "https://lk-home-assistant-dev.azure-api.net"
+    apiHost = "https://link2.lk.nu/"
   ) {
     super();
 
@@ -633,7 +633,7 @@ export class LkApi extends SimpleClass {
    */
   async getUserMessages(): Promise<Notification[]> {
     return this.makeAuthorizedRequest<Notification[]>(
-      "/messaging/messages/user",
+      "/messaging/api/messages/user",
       HttpMethod.GET
     );
   }
@@ -643,7 +643,7 @@ export class LkApi extends SimpleClass {
    */
   async getRealestateMessages(realestateId: string): Promise<Notification[]> {
     return this.makeAuthorizedRequest<Notification[]>(
-      `/messaging/messages/realestate/${encodeURIComponent(realestateId)}`,
+      `/messaging/api/messages/realestate/${encodeURIComponent(realestateId)}`,
       HttpMethod.GET
     );
   }
@@ -653,7 +653,7 @@ export class LkApi extends SimpleClass {
    */
   async getProductMessages(productId: string): Promise<Notification[]> {
     return this.makeAuthorizedRequest<Notification[]>(
-      `/messaging/messages/product/${encodeURIComponent(productId)}`,
+      `/messaging/api/messages/product/${encodeURIComponent(productId)}`,
       HttpMethod.GET
     );
   }
@@ -663,7 +663,7 @@ export class LkApi extends SimpleClass {
    */
   async getMessageData(messageId: number): Promise<unknown> {
     return this.makeAuthorizedRequest<unknown>(
-      `/messaging/messages/${messageId}/data`,
+      `/messaging/api/messages/${messageId}/data`,
       HttpMethod.GET
     );
   }
@@ -673,7 +673,7 @@ export class LkApi extends SimpleClass {
    */
   async getMessageReadStatus(messageId: number): Promise<boolean> {
     return this.makeAuthorizedRequest<boolean>(
-      `/messaging/messages/${messageId}/read`,
+      `/messaging/api/messages/${messageId}/read`,
       HttpMethod.GET
     );
   }
@@ -683,7 +683,7 @@ export class LkApi extends SimpleClass {
    */
   async markMessageAsRead(messageId: number): Promise<boolean> {
     return this.makeAuthorizedRequest<boolean>(
-      `/messaging/messages/${messageId}/read`,
+      `/messaging/api/messages/${messageId}/read`,
       HttpMethod.POST,
       messageId
     );
