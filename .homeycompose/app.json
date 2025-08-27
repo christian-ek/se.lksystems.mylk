@@ -3,7 +3,9 @@
   "version": "1.3.2",
   "compatibility": ">=12.2.0",
   "sdk": 3,
-  "platforms": ["local"],
+  "platforms": [
+    "local"
+  ],
   "name": {
     "en": "LK Systems",
     "sv": "LK Systems"
@@ -12,7 +14,9 @@
     "en": "For the simpler, smarter everyday",
     "sv": "För en enklare och smartare vardag"
   },
-  "category": ["climate"],
+  "category": [
+    "climate"
+  ],
   "permissions": [],
   "images": {
     "xlarge": "/assets/images/xlarge.jpg",
@@ -33,8 +37,20 @@
   "support": "mailto:hi@christianek.io",
   "brandColor": "#0082c8",
   "tags": {
-    "en": ["LK", "ICS", "ICS.2", "Thermostat", "Underfloor heating"],
-    "sv": ["LK", "ICS", "ICS.2", "Termostat", "Golvvärme"]
+    "en": [
+      "LK",
+      "ICS",
+      "ICS.2",
+      "Thermostat",
+      "Underfloor heating"
+    ],
+    "sv": [
+      "LK",
+      "ICS",
+      "ICS.2",
+      "Termostat",
+      "Golvvärme"
+    ]
   },
   "source": "https://github.com/christian-ek/se.lksystems.mylk"
 }

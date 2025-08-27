@@ -89,6 +89,11 @@
           "decimals": 0
         }
       },
+      "energy": {
+        "batteries": [
+          "INTERNAL"
+        ]
+      },
       "platforms": [
         "local"
       ],
@@ -96,8 +101,8 @@
         "cloud"
       ],
       "images": {
-        "small": "/drivers/arc-sense/assets/images/small.png",
-        "large": "/drivers/arc-sense/assets/images/large.png"
+        "small": "/drivers/arc-sense/assets/images/small.jpg",
+        "large": "/drivers/arc-sense/assets/images/large.jpg"
       },
       "pair": [
         {
@@ -225,9 +230,14 @@
       "connectivity": [
         "cloud"
       ],
+      "energy": {
+        "batteries": [
+          "INTERNAL"
+        ]
+      },
       "images": {
-        "small": "/drivers/cubic-detector/assets/images/small.png",
-        "large": "/drivers/cubic-detector/assets/images/large.png"
+        "small": "/drivers/cubic-detector/assets/images/small.jpg",
+        "large": "/drivers/cubic-detector/assets/images/large.jpg"
       },
       "pair": [
         {
@@ -382,8 +392,8 @@
         "cloud"
       ],
       "images": {
-        "small": "/drivers/cubic-secure/assets/images/small.png",
-        "large": "/drivers/cubic-secure/assets/images/large.png"
+        "small": "/drivers/cubic-secure/assets/images/small.jpg",
+        "large": "/drivers/cubic-secure/assets/images/large.jpg"
       },
       "pair": [
         {

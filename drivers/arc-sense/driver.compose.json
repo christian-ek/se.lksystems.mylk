@@ -32,11 +32,14 @@
       "decimals": 0
     }
   },
+  "energy": {
+    "batteries": ["INTERNAL"]
+  },
   "platforms": ["local"],
   "connectivity": ["cloud"],
   "images": {
-    "small": "{{driverAssetsPath}}/images/small.png",
-    "large": "{{driverAssetsPath}}/images/large.png"
+    "small": "{{driverAssetsPath}}/images/small.jpg",
+    "large": "{{driverAssetsPath}}/images/large.jpg"
   },
   "pair": [
     {
