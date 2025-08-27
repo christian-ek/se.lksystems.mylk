@@ -10,7 +10,7 @@ import {
   scheduleUpdate,
 } from "../../lib/lk-utils";
 
-const UPDATE_INTERVAL_SECONDS = 30; // Set update interval
+const UPDATE_INTERVAL_SECONDS = 20; // Set update interval
 
 interface DeviceSettings {
   email: string;

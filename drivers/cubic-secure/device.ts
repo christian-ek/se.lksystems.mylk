@@ -3,17 +3,18 @@ import type Homey from "homey/lib/Homey";
 import type {
   CubicSecureConfig,
   CubicSecureMeasurement,
+  Notification,
 } from "../../lib/lk-types";
 import type { DeviceData } from "../../lib/driver-types";
 import { LkApi } from "../../lib/lk-api";
-import { ValveState, LeakState } from "../../lib/lk-types";
+import { ValveState } from "../../lib/lk-types";
 import {
   updateCapability,
   formatError,
   scheduleUpdate,
 } from "../../lib/lk-utils";
 
-const UPDATE_INTERVAL_SECONDS = 60; // Set update interval
+const UPDATE_INTERVAL_SECONDS = 20; // Set update interval
 
 interface DeviceSettings {
   email: string;
@@ -182,13 +183,16 @@ class CubicSecureDevice extends Device {
         this.deviceData.id
       );
 
+      // Get messages for leak detection instead of using device leak state
+      const messages = await this.api.getProductMessages(this.deviceData.id);
+
       // Mark device as available if it was unavailable
       if (!this.getAvailable()) {
         await this.setAvailable().catch(this.error);
         this.log("Device marked as available after receiving data");
       }
 
-      await this.updateCapabilities(measurement, configuration);
+      await this.updateCapabilities(measurement, configuration, messages);
 
       // Schedule the next update
       this.updateTimeout = scheduleUpdate(
@@ -215,14 +219,22 @@ class CubicSecureDevice extends Device {
 
   private async updateCapabilities(
     measurement: CubicSecureMeasurement,
-    configuration: CubicSecureConfig
+    configuration: CubicSecureConfig,
+    messages: Notification[]
   ) {
     try {
       const promises: Array<Promise<void> | undefined> = [];
 
-      // Update water leak alarm
-      const leakState = measurement.leak?.leakState;
-      const hasLeak = leakState !== null && leakState !== LeakState.NO_LEAK;
+      // Update water leak alarm based on specific unread message types from messaging service
+      const leakMessages = messages.filter(msg => 
+        !msg.isRead && msg.messageType && (
+          msg.messageType === 'messaging_service.cubicsecure_leak_large' ||
+          msg.messageType === 'messaging_service.cubicsecure_leak_medium' ||
+          msg.messageType === 'messaging_service.cubicsecure_leak_pressure' ||
+          msg.messageType === 'messaging_service.cubicsecure_leak_small'
+        )
+      );
+      const hasLeak = leakMessages.length > 0;
       promises.push(updateCapability(this, "alarm_water", hasLeak));
 
       // Enable or disable the onoff capability based on leak state

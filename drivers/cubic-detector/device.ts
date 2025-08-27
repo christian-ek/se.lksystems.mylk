@@ -1,16 +1,15 @@
 import { Device } from "homey";
 import type Homey from "homey/lib/Homey";
-import type { CubicDetectorMeasurement } from "../../lib/lk-types";
+import type { CubicDetectorMeasurement, Notification } from "../../lib/lk-types";
 import type { DeviceData } from "../../lib/driver-types";
 import { LkApi } from "../../lib/lk-api";
-import { LeakState } from "../../lib/lk-types";
 import {
   updateCapability,
   formatError,
   scheduleUpdate,
 } from "../../lib/lk-utils";
 
-const UPDATE_INTERVAL_SECONDS = 60; // Set update interval
+const UPDATE_INTERVAL_SECONDS = 20; // Set update interval
 
 interface DeviceSettings {
   email: string;
@@ -104,9 +103,13 @@ class CubicDetectorDevice extends Device {
     }
 
     try {
+      // Get device measurement for temperature, humidity, battery, etc.
       const measurement = await this.api.getCubicDetectorMeasurement(
         this.deviceData.id
       );
+
+      // Get messages for leak detection instead of using device leak state
+      const messages = await this.api.getProductMessages(this.deviceData.id);
 
       if (!measurement) {
         this.log("No measurement data received - device may be offline");
@@ -125,7 +128,7 @@ class CubicDetectorDevice extends Device {
         this.log("Device marked as available after receiving data");
       }
 
-      await this.updateCapabilities(measurement);
+      await this.updateCapabilities(measurement, messages);
 
       // Schedule the next update
       this.updateTimeout = scheduleUpdate(
@@ -150,13 +153,34 @@ class CubicDetectorDevice extends Device {
     }
   }
 
-  private async updateCapabilities(measurement: CubicDetectorMeasurement) {
+  private convertVoltageToBatteryPercentage(voltageMillivolts: number): number {
+    if (voltageMillivolts >= 2880) {
+      // 2880mV and above → 50–100%
+      return Math.round(50 + ((voltageMillivolts - 2880) / (3300 - 2880)) * 50);
+    } else if (voltageMillivolts >= 2550) {
+      // 2550–2880mV → 10–50%
+      return Math.round(10 + ((voltageMillivolts - 2550) / (2880 - 2550)) * 40);
+    } else if (voltageMillivolts >= 2100) {
+      // 2100–2550mV → 1-10%
+      return Math.round(1 + ((voltageMillivolts - 2100) / (2550 - 2100)) * 9);
+    } else {
+      // below 2100mV → below 1%
+      return 0;
+    }
+  }
+
+  private async updateCapabilities(measurement: CubicDetectorMeasurement, messages: Notification[]) {
     try {
       const promises: Array<Promise<void> | undefined> = [];
 
-      // Update water leak alarm - pass boolean directly instead of 0/1
-      const leakState = measurement.leak?.leakState;
-      const hasLeak = leakState !== null && leakState !== LeakState.NO_LEAK;
+      // Update water leak alarm based on specific unread message types from messaging service
+      const leakMessages = messages.filter(msg => 
+        !msg.isRead && msg.messageType && (
+          msg.messageType === 'messaging_service.cubicdetector_flood' ||
+          msg.messageType === 'messaging_service.cubicdetector_freeze'
+        )
+      );
+      const hasLeak = leakMessages.length > 0;
       promises.push(updateCapability(this, "alarm_water", hasLeak));
 
       // Temperature
@@ -177,8 +201,9 @@ class CubicDetectorDevice extends Device {
 
       // Battery
       if (measurement.currentBattery != null) {
+        const batteryPercentage = this.convertVoltageToBatteryPercentage(measurement.currentBattery);
         promises.push(
-          updateCapability(this, "measure_battery", measurement.currentBattery)
+          updateCapability(this, "measure_battery", batteryPercentage)
         );
       }
 
