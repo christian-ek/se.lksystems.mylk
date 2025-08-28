@@ -138,7 +138,7 @@ class CubicDetectorDriver extends Driver {
       }
 
       this.log(
-        `Listing Cubic Detector devices for "${this.selectedRealEstate.name}" (${realEstateId})`
+        `Listing CubicDetector devices for "${this.selectedRealEstate.name}" (${realEstateId})`
       );
 
       const devices = await this.api.getRealEstateMachines(realEstateId);
@@ -149,7 +149,7 @@ class CubicDetectorDriver extends Driver {
           device.deviceRole?.toLowerCase() === "cubicdetector"
       );
 
-      this.log(`Found ${cubicDetectorDevices.length} Cubic Detector devices`);
+      this.log(`Found ${cubicDetectorDevices.length} CubicDetector devices`);
 
       const deviceItems: DeviceItem[] = [];
       for (const device of cubicDetectorDevices) {
@@ -159,7 +159,7 @@ class CubicDetectorDriver extends Driver {
         }
 
         const zoneName = device.zone?.zoneName || "Unknown Room";
-        const deviceName = `Cubic Detector - ${zoneName}`;
+        const deviceName = `CubicDetector - ${zoneName}`;
 
         this.log(`Adding device: ${deviceName} (${device.identity})`);
 

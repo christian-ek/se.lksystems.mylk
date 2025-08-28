@@ -1,8 +1,8 @@
 {
   "id": "cubic-secure",
   "name": {
-    "en": "Cubic Secure",
-    "sv": "Cubic Secure"
+    "en": "CubicSecure",
+    "sv": "CubicSecure"
   },
   "class": "watervalve",
   "capabilities": [

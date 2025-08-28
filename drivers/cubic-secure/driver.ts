@@ -138,7 +138,7 @@ class CubicSecureDriver extends Driver {
       }
 
       this.log(
-        `Listing Cubic Secure devices for "${this.selectedRealEstate.name}" (${realEstateId})`
+        `Listing CubicSecure devices for "${this.selectedRealEstate.name}" (${realEstateId})`
       );
 
       const devices = await this.api.getRealEstateMachines(realEstateId);
@@ -149,7 +149,7 @@ class CubicSecureDriver extends Driver {
           device.deviceRole?.toLowerCase() === "cubicsecure"
       );
 
-      this.log(`Found ${cubicSecureDevices.length} Cubic Secure devices`);
+      this.log(`Found ${cubicSecureDevices.length} CubicSecure devices`);
 
       const deviceItems: DeviceItem[] = [];
       for (const device of cubicSecureDevices) {
@@ -159,7 +159,7 @@ class CubicSecureDriver extends Driver {
         }
 
         const zoneName = device.zone?.zoneName || "Unknown Room";
-        const deviceName = `Cubic Secure - ${zoneName}`;
+        const deviceName = `CubicSecure - ${zoneName}`;
 
         this.log(`Adding device: ${deviceName} (${device.identity})`);
 

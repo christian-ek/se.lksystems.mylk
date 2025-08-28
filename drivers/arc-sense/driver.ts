@@ -138,7 +138,7 @@ class ArcSenseDriver extends Driver {
       }
 
       this.log(
-        `Listing Arc Sense devices for "${this.selectedRealEstate.name}" (${realEstateId})`
+        `Listing ArcSense devices for "${this.selectedRealEstate.name}" (${realEstateId})`
       );
 
       const devices = await this.api.getRealEstateMachines(realEstateId);
@@ -149,7 +149,7 @@ class ArcSenseDriver extends Driver {
           device.deviceRole?.toLowerCase() === "arc-tune"
       );
 
-      this.log(`Found ${arcSenseDevices.length} Arc Sense devices`);
+      this.log(`Found ${arcSenseDevices.length} ArcSense devices`);
 
       const deviceItems: DeviceItem[] = [];
       for (const device of arcSenseDevices) {
@@ -159,7 +159,7 @@ class ArcSenseDriver extends Driver {
         }
 
         const zoneName = device.zone?.zoneName || "Unknown Room";
-        const deviceName = `Arc Sense - ${zoneName}`;
+        const deviceName = `ArcSense - ${zoneName}`;
 
         // Get device configuration to check if it's wired
         let wired = false;

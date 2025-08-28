@@ -42,14 +42,28 @@
       "ICS",
       "ICS.2",
       "Thermostat",
-      "Underfloor heating"
+      "Underfloor heating",
+      "ArcSense",
+      "CubicSecure",
+      "CubicDetector",
+      "Water valve",
+      "Water detector",
+      "Leak detection",
+      "Water safety"
     ],
     "sv": [
       "LK",
       "ICS",
       "ICS.2",
       "Termostat",
-      "Golvvärme"
+      "Golvvärme",
+      "ArcSense",
+      "CubicSecure",
+      "CubicDetector",
+      "Vattenventil",
+      "Vattendetektor",
+      "Läckagedetektering",
+      "Vattensäkerhet"
     ]
   },
   "source": "https://github.com/christian-ek/se.lksystems.mylk"

@@ -1,8 +1,8 @@
 {
   "id": "arc-sense",
   "name": {
-    "en": "Arc Sense",
-    "sv": "Arc Sense"
+    "en": "ArcSense",
+    "sv": "ArcSense"
   },
   "class": "thermostat",
   "capabilities": [

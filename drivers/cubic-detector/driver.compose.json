@@ -1,8 +1,8 @@
 {
   "id": "cubic-detector",
   "name": {
-    "en": "Cubic Detector",
-    "sv": "Cubic Detector"
+    "en": "CubicDetector",
+    "sv": "CubicDetector"
   },
   "class": "sensor",
   "capabilities": [
