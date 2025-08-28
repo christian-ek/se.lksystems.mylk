@@ -52,5 +52,8 @@
   },
   "2.0.0": {
     "en": "Add support for Arc Sense, Cubic Detector and Cubic Secure"
+  },
+  "2.0.1": {
+    "en": "Adjust naming"
   }
 }
