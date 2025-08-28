@@ -43,14 +43,28 @@
       "ICS",
       "ICS.2",
       "Thermostat",
-      "Underfloor heating"
+      "Underfloor heating",
+      "ArcSense",
+      "CubicSecure",
+      "CubicDetector",
+      "Water valve",
+      "Water detector",
+      "Leak detection",
+      "Water safety"
     ],
     "sv": [
       "LK",
       "ICS",
       "ICS.2",
       "Termostat",
-      "Golvvärme"
+      "Golvvärme",
+      "ArcSense",
+      "CubicSecure",
+      "CubicDetector",
+      "Vattenventil",
+      "Vattendetektor",
+      "Läckagedetektering",
+      "Vattensäkerhet"
     ]
   },
   "source": "https://github.com/christian-ek/se.lksystems.mylk",
@@ -58,8 +72,8 @@
     {
       "id": "arc-sense",
       "name": {
-        "en": "Arc Sense",
-        "sv": "Arc Sense"
+        "en": "ArcSense",
+        "sv": "ArcSense"
       },
       "class": "thermostat",
       "capabilities": [
@@ -199,8 +213,8 @@
     {
       "id": "cubic-detector",
       "name": {
-        "en": "Cubic Detector",
-        "sv": "Cubic Detector"
+        "en": "CubicDetector",
+        "sv": "CubicDetector"
       },
       "class": "sensor",
       "capabilities": [
@@ -334,8 +348,8 @@
     {
       "id": "cubic-secure",
       "name": {
-        "en": "Cubic Secure",
-        "sv": "Cubic Secure"
+        "en": "CubicSecure",
+        "sv": "CubicSecure"
       },
       "class": "watervalve",
       "capabilities": [

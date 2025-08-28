@@ -49,7 +49,7 @@ export class LkApi extends SimpleClass {
   private accessToken: string | null | undefined;
   private refreshToken: string | null | undefined;
   private homey: Homey;
-  public debug = true;
+  public debug = false;
 
   constructor(
     email: string,
