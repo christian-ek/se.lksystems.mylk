@@ -36,6 +36,7 @@
     },
     "meter_water.day": {
       "decimals": 0,
+      "units": "L",
       "title": {
         "en": "Daily Water Consumption",
         "sv": "Daglig Vattenförbrukning"
@@ -43,6 +44,7 @@
     },
     "meter_water.total": {
       "decimals": 0,
+      "units": "L",
       "title": {
         "en": "Total Water Consumption",
         "sv": "Total Vattenförbrukning"
