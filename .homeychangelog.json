@@ -55,5 +55,8 @@
   },
   "2.0.1": {
     "en": "Adjust naming"
+  },
+  "2.0.2": {
+    "en": "Fix water usage unit"
   }
 }
