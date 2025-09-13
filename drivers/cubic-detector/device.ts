@@ -1,6 +1,9 @@
 import { Device } from "homey";
 import type Homey from "homey/lib/Homey";
-import type { CubicDetectorMeasurement, Notification } from "../../lib/lk-types";
+import type {
+  CubicDetectorMeasurement,
+  Notification,
+} from "../../lib/lk-types";
 import type { DeviceData } from "../../lib/driver-types";
 import { LkApi } from "../../lib/lk-api";
 import {
@@ -169,16 +172,20 @@ class CubicDetectorDevice extends Device {
     }
   }
 
-  private async updateCapabilities(measurement: CubicDetectorMeasurement, messages: Notification[]) {
+  private async updateCapabilities(
+    measurement: CubicDetectorMeasurement,
+    messages: Notification[]
+  ) {
     try {
       const promises: Array<Promise<void> | undefined> = [];
 
       // Update water leak alarm based on specific unread message types from messaging service
-      const leakMessages = messages.filter(msg => 
-        !msg.isRead && msg.messageType && (
-          msg.messageType === 'messaging_service.cubicdetector_flood' ||
-          msg.messageType === 'messaging_service.cubicdetector_freeze'
-        )
+      const leakMessages = messages.filter(
+        (msg) =>
+          !msg.isRead &&
+          msg.messageType &&
+          (msg.messageType === "messaging_service.cubicdetector_flood" ||
+            msg.messageType === "messaging_service.cubicdetector_freeze")
       );
       const hasLeak = leakMessages.length > 0;
       promises.push(updateCapability(this, "alarm_water", hasLeak));
@@ -201,7 +208,9 @@ class CubicDetectorDevice extends Device {
 
       // Battery
       if (measurement.currentBattery != null) {
-        const batteryPercentage = this.convertVoltageToBatteryPercentage(measurement.currentBattery);
+        const batteryPercentage = this.convertVoltageToBatteryPercentage(
+          measurement.currentBattery
+        );
         promises.push(
           updateCapability(this, "measure_battery", batteryPercentage)
         );

@@ -68,6 +68,64 @@
     ]
   },
   "source": "https://github.com/christian-ek/se.lksystems.mylk",
+  "flow": {
+    "actions": [
+      {
+        "title": {
+          "en": "Cancel alarm pause on CubicSecure",
+          "sv": "Avbryt larmpaus på CubicSecure"
+        },
+        "titleFormatted": {
+          "en": "Cancel alarm pause",
+          "sv": "Avbryt larmpaus"
+        },
+        "hint": {
+          "en": "Cancels any active leak detection pause.",
+          "sv": "Avbryter pågående paus av läckagedetektering."
+        },
+        "args": [
+          {
+            "name": "device",
+            "type": "device",
+            "filter": "driver_id=cubic-secure"
+          }
+        ],
+        "id": "cubicsecure_cancel_pause"
+      },
+      {
+        "title": {
+          "en": "Pause alarms on CubicSecure",
+          "sv": "Pausa larm på CubicSecure"
+        },
+        "titleFormatted": {
+          "en": "Pause alarms for [[seconds]] seconds",
+          "sv": "Pausa larm i [[seconds]] sekunder"
+        },
+        "hint": {
+          "en": "Pauses leak detection for the given number of seconds.",
+          "sv": "Pausar läckagedetektering i angivet antal sekunder."
+        },
+        "args": [
+          {
+            "name": "device",
+            "type": "device",
+            "filter": "driver_id=cubic-secure"
+          },
+          {
+            "name": "seconds",
+            "type": "number",
+            "min": 0,
+            "step": 1,
+            "placeholder": {
+              "en": "Seconds",
+              "sv": "Sekunder"
+            }
+          }
+        ],
+        "id": "cubicsecure_pause_alarm"
+      }
+    ]
+  },
   "drivers": [
     {
       "id": "arc-sense",

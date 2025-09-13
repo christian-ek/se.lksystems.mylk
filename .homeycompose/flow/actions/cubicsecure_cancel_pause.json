@@ -1,0 +1,21 @@
+{
+  "title": {
+    "en": "Cancel alarm pause on CubicSecure",
+    "sv": "Avbryt larmpaus på CubicSecure"
+  },
+  "titleFormatted": {
+    "en": "Cancel alarm pause",
+    "sv": "Avbryt larmpaus"
+  },
+  "hint": {
+    "en": "Cancels any active leak detection pause.",
+    "sv": "Avbryter pågående paus av läckagedetektering."
+  },
+  "args": [
+    {
+      "name": "device",
+      "type": "device",
+      "filter": "driver_id=cubic-secure"
+    }
+  ]
+}

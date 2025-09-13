@@ -629,6 +629,36 @@ export class LkApi extends SimpleClass {
   }
 
   /**
+   * Temporarily disable leak detection (pause alarms) on a Cubic device.
+   * Pass seconds=0 to cancel an active pause.
+   */
+  async disableCubicLeakDetection(
+    serialNumber: string,
+    seconds: number
+  ): Promise<boolean> {
+    try {
+      const payload = { seconds };
+      await this.makeAuthorizedRequest(
+        `/control/cubic/${encodeURIComponent(
+          serialNumber
+        )}/disable-leak-detection`,
+        HttpMethod.POST,
+        payload
+      );
+      this.log(
+        `Cubic leak detection disabled on ${serialNumber} for ${seconds} seconds`
+      );
+      return true;
+    } catch (error) {
+      const errorMsg = `Failed to disable Cubic leak detection for ${serialNumber}: ${this.formatAxiosError(
+        error as AxiosError
+      )}`;
+      this.error(errorMsg);
+      return false;
+    }
+  }
+
+  /**
    * Get current user messages/notifications
    */
   async getUserMessages(): Promise<Notification[]> {

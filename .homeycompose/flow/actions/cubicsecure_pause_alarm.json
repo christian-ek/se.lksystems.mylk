@@ -1,0 +1,31 @@
+{
+  "title": {
+    "en": "Pause alarms on CubicSecure",
+    "sv": "Pausa larm på CubicSecure"
+  },
+  "titleFormatted": {
+    "en": "Pause alarms for [[seconds]] seconds",
+    "sv": "Pausa larm i [[seconds]] sekunder"
+  },
+  "hint": {
+    "en": "Pauses leak detection for the given number of seconds.",
+    "sv": "Pausar läckagedetektering i angivet antal sekunder."
+  },
+  "args": [
+    {
+      "name": "device",
+      "type": "device",
+      "filter": "driver_id=cubic-secure"
+    },
+    {
+      "name": "seconds",
+      "type": "number",
+      "min": 0,
+      "step": 1,
+      "placeholder": {
+        "en": "Seconds",
+        "sv": "Sekunder"
+      }
+    }
+  ]
+}

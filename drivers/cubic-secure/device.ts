@@ -225,14 +225,14 @@ class CubicSecureDevice extends Device {
     try {
       const promises: Array<Promise<void> | undefined> = [];
 
-      // Update water leak alarm based on specific unread message types from messaging service
-      const leakMessages = messages.filter(msg => 
-        !msg.isRead && msg.messageType && (
-          msg.messageType === 'messaging_service.cubicsecure_leak_large' ||
-          msg.messageType === 'messaging_service.cubicsecure_leak_medium' ||
-          msg.messageType === 'messaging_service.cubicsecure_leak_pressure' ||
-          msg.messageType === 'messaging_service.cubicsecure_leak_small'
-        )
+      const leakMessages = messages.filter(
+        (msg) =>
+          !msg.isRead &&
+          msg.messageType &&
+          (msg.messageType === "messaging_service.cubicsecure_leak_large" ||
+            msg.messageType === "messaging_service.cubicsecure_leak_medium" ||
+            msg.messageType === "messaging_service.cubicsecure_leak_pressure" ||
+            msg.messageType === "messaging_service.cubicsecure_leak_small")
       );
       const hasLeak = leakMessages.length > 0;
       promises.push(updateCapability(this, "alarm_water", hasLeak));
@@ -326,6 +326,34 @@ class CubicSecureDevice extends Device {
       await Promise.all(promises.filter((p) => p !== undefined));
     } catch (error) {
       this.error(`Error processing capability updates: ${formatError(error)}`);
+    }
+  }
+
+  /**
+   * Pause leak detection (alarm pause) for a specified number of seconds.
+   * Pass 0 seconds to cancel an active pause early.
+   */
+  async pauseLeakDetection(seconds: number): Promise<void> {
+    this.log(`Request to pause leak detection for ${seconds} seconds`);
+
+    if (!this.api) {
+      this.error("API client not initialized");
+      throw new Error("API not initialized");
+    }
+
+    try {
+      const success = await this.api.disableCubicLeakDetection(
+        this.deviceData.id,
+        seconds
+      );
+
+      if (!success) {
+        throw new Error("Failed to pause leak detection");
+      }
+      this.log(`Leak detection pause command sent successfully`);
+    } catch (error) {
+      this.error(`Pause leak detection error: ${formatError(error)}`);
+      throw error;
     }
   }
 
