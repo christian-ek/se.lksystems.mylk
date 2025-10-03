@@ -3,9 +3,7 @@
   "version": "2.0.4",
   "compatibility": ">=12.2.0",
   "sdk": 3,
-  "platforms": [
-    "local"
-  ],
+  "platforms": ["local"],
   "name": {
     "en": "LK Systems",
     "sv": "LK Systems"
@@ -14,9 +12,7 @@
     "en": "For the simpler, smarter everyday",
     "sv": "För en enklare och smartare vardag"
   },
-  "category": [
-    "climate"
-  ],
+  "category": ["climate"],
   "permissions": [],
   "images": {
     "xlarge": "/assets/images/xlarge.jpg",
@@ -35,7 +31,7 @@
     }
   },
   "support": "mailto:hi@christianek.io",
-  "brandColor": "#0082c8",
+  "brandColor": "#ffffff",
   "tags": {
     "en": [
       "LK",
