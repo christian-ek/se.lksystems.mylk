@@ -1,1 +1,1 @@
-Add your LK Webserver IP and Password in the app settings before adding devices.
+Keep your home comfortable and safe with LK Systems. Control your underfloor heating thermostats for perfect climate comfort throughout your home, while protecting against water damage with intelligent leak detection and automated water valve control. All from the comfort of your chair, with just a tap on your phone.

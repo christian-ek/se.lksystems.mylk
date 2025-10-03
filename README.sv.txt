@@ -1,1 +1,1 @@
-Lägg till LK Webserver IP och lösenord i appinställningarna innan du söker efter enheter.
+Håll ditt hem bekvämt och säkert med LK Systems. Styr dina golvvärmetermostater för perfekt klimatkomfort i hela hemmet, samtidigt som du skyddar mot vattenskador med intelligent läckagedetektering och automatisk vattenventilstyrning. Allt från din fåtölj, med bara ett tryck på telefonen.
